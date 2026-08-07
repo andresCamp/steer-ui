@@ -1,0 +1,8 @@
+{
+  "states": {
+    "default": { "children": "Active" },
+    "success": { "tone": "success", "dot": "true", "children": "Live" },
+    "warning": { "tone": "warning", "children": "Pending" },
+    "danger": { "tone": "danger", "dot": "true", "children": "Failed" }
+  }
+}

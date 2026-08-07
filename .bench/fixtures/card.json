@@ -1,0 +1,8 @@
+{
+  "states": {
+    "default": { "title": "Team settings", "children": "Manage who has access to this workspace." },
+    "with-footer": { "title": "Team settings", "footer": "Last updated 2 days ago", "children": "Manage who has access to this workspace." },
+    "flush": { "title": "Members", "flush": "true", "children": "Full-bleed content area" },
+    "bare": { "children": "Just a body." }
+  }
+}

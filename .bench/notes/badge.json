@@ -1,0 +1,16 @@
+[
+  {
+    "id": "note_5dd6548a",
+    "component": "badge",
+    "stateUrl": "/__bench/badge?children=Pending&tone=warning&dot=true",
+    "selector": "span",
+    "coords": {
+      "x": 0.5161016949152543,
+      "y": 0.5033025099075297
+    },
+    "text": "dsfsd",
+    "author": "andres",
+    "status": "resolved",
+    "created": "2026-08-07T13:22:16.639Z"
+  }
+]

@@ -1,0 +1,228 @@
+[
+  {
+    "id": "note_d7e318b4",
+    "component": "button",
+    "stateUrl": "/__bench/button?children=Delete+project&variant=destructive&size=lg",
+    "selector": "button",
+    "coords": {
+      "x": 0.016700059661644312,
+      "y": 0.07420797068760816
+    },
+    "text": "feels too wide at lg, tighten padding",
+    "author": "andres",
+    "status": "open",
+    "created": "2026-08-07T13:20:13.303Z",
+    "replies": [
+      {
+        "id": "reply_eaf2b91d",
+        "author": "agent",
+        "text": "Reproduced at this state URL. The padding comes from size=lg's px-6; proposing px-5. Will attach a fix.",
+        "created": "2026-08-07T14:57:00.018Z"
+      },
+      {
+        "id": "reply_d211664b",
+        "author": "andres",
+        "text": "sounds right, ship it",
+        "created": "2026-08-07T14:57:13.525Z"
+      }
+    ]
+  },
+  {
+    "id": "note_35ffac93",
+    "component": "button",
+    "stateUrl": "/__bench/button?children=Delete+project&variant=destructive",
+    "selector": "(canvas)",
+    "coords": {
+      "x": 0.8565717141429285,
+      "y": 0.1703125
+    },
+    "rect": {
+      "x": 0.6963939352218114,
+      "y": 0.1703125,
+      "w": 0.16017777892111718,
+      "h": 0.15010711155529086
+    },
+    "text": "this whole corner area feels cramped",
+    "author": "andres",
+    "status": "resolved",
+    "created": "2026-08-07T14:31:06.829Z"
+  },
+  {
+    "id": "note_535e7fb6",
+    "component": "button",
+    "stateUrl": "/__bench/button?children=Save+changes",
+    "selector": "(canvas)",
+    "coords": {
+      "x": 1.4530531085467813,
+      "y": 1.2205052221915704
+    },
+    "rect": {
+      "x": 0.5406923049807889,
+      "y": 1.2205052221915704,
+      "w": 0.9123608035659924,
+      "h": 1.1022339292653334
+    },
+    "text": "dsfsd",
+    "author": "andres",
+    "status": "resolved",
+    "created": "2026-08-07T14:31:39.610Z"
+  },
+  {
+    "id": "note_a04dc424",
+    "component": "button",
+    "stateUrl": "/__bench/button?children=Save+changes&size=lg&variant=primary",
+    "selector": "(canvas)",
+    "coords": {
+      "x": 1.1055644785244287,
+      "y": -0.278564453125
+    },
+    "rect": {
+      "x": -0.07678358634267657,
+      "y": -0.278564453125,
+      "w": 1.1823480648671054,
+      "h": 1.6138509114583335
+    },
+    "text": "dsfds",
+    "author": "andres",
+    "status": "open",
+    "created": "2026-08-07T14:36:13.740Z"
+  },
+  {
+    "id": "note_e80d1bf2",
+    "component": "button",
+    "stateUrl": "/__bench/button?children=Save+changes",
+    "selector": "(canvas)",
+    "coords": {
+      "x": 2.0152234460058236,
+      "y": 0.6998046874999997
+    },
+    "rect": {
+      "x": 1.3723889099886062,
+      "y": 0.6998046874999997,
+      "w": 0.6428345360172173,
+      "h": 2.30986328125
+    },
+    "text": "fsd",
+    "author": "andres",
+    "status": "resolved",
+    "created": "2026-08-07T14:42:30.297Z"
+  },
+  {
+    "id": "note_f3bec888",
+    "component": "button",
+    "stateUrl": "/__bench/button?children=Cancel&variant=secondary",
+    "selector": "button",
+    "coords": {
+      "x": 1.2000001538196496,
+      "y": -0.5
+    },
+    "rect": {
+      "x": 0.29999984618035047,
+      "y": -0.5,
+      "w": 0.9000003076392992,
+      "h": 1.2
+    },
+    "text": "pin should be top right of this",
+    "author": "andres",
+    "status": "resolved",
+    "created": "2026-08-07T14:44:58.352Z"
+  },
+  {
+    "id": "note_98bfcf6b",
+    "component": "button",
+    "stateUrl": "/__bench/button?children=Delete+project&variant=destructive&size=lg",
+    "selector": "div:nth-of-type(3) > div > p",
+    "coords": {
+      "x": 0.37250676165459834,
+      "y": 0.48738250012372236
+    },
+    "rect": {
+      "x": -0.1639983787617793,
+      "y": 0.48738250012372236,
+      "w": 0.5365051404163776,
+      "h": 0.934491180777326
+    },
+    "text": "dfs",
+    "author": "andres",
+    "status": "resolved",
+    "created": "2026-08-07T14:45:54.605Z",
+    "replies": [
+      {
+        "id": "reply_b943c8d9",
+        "author": "andres",
+        "text": "yes",
+        "created": "2026-08-07T14:57:52.155Z"
+      },
+      {
+        "id": "reply_1619794e",
+        "author": "andres",
+        "text": "yesy",
+        "created": "2026-08-07T14:57:56.306Z"
+      }
+    ]
+  },
+  {
+    "id": "note_3c890819",
+    "component": "button",
+    "stateUrl": "/__bench/button?children=Test&variant=ghost",
+    "selector": "div:nth-of-type(4) > button",
+    "coords": {
+      "x": 0.5,
+      "y": 0.5
+    },
+    "text": "temp note for resolve test",
+    "author": "andres",
+    "status": "resolved",
+    "created": "2026-08-07T14:52:17.455Z"
+  },
+  {
+    "id": "note_4bafa849",
+    "component": "button",
+    "stateUrl": "/__bench/button?children=Test&variant=ghost",
+    "selector": "div:nth-of-type(4) > button",
+    "coords": {
+      "x": 0.5,
+      "y": 0.5
+    },
+    "text": "resolve gracefully test",
+    "author": "andres",
+    "status": "resolved",
+    "created": "2026-08-07T14:53:08.121Z"
+  },
+  {
+    "id": "note_fc26cafb",
+    "component": "button",
+    "stateUrl": "/__bench/button?variant=ghost&children=Ghost",
+    "selector": "button",
+    "coords": {
+      "x": 0.5,
+      "y": -0.4
+    },
+    "text": "ghost variant has no visible focus ring against the canvas",
+    "author": "agent",
+    "status": "open",
+    "created": "2026-08-07T14:57:00.024Z",
+    "replies": [
+      {
+        "id": "reply_8ae7e8fb",
+        "author": "andres",
+        "text": "true",
+        "created": "2026-08-07T14:58:11.293Z"
+      }
+    ]
+  },
+  {
+    "id": "note_6d839366",
+    "component": "button",
+    "stateUrl": "/__bench/button?children=Delete+project&variant=destructive",
+    "selector": "(canvas)",
+    "coords": {
+      "x": 0.4609985670854214,
+      "y": 2.5771676026540824
+    },
+    "text": "test",
+    "author": "andres",
+    "status": "open",
+    "created": "2026-08-07T15:36:18.334Z"
+  }
+]

@@ -1,0 +1,8 @@
+{
+  "states": {
+    "default": { "label": "Email", "placeholder": "you@company.com" },
+    "error": { "label": "Email", "placeholder": "you@company.com", "error": "Enter a valid email address" },
+    "disabled": { "label": "Email", "placeholder": "you@company.com", "disabled": "true" },
+    "bare": { "placeholder": "Search" }
+  }
+}
