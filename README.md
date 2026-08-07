@@ -33,6 +33,9 @@ Agent-authored notes and replies render with indigo accents in the bench so auth
 
 ## Conventions the codegen expects
 
-- One component per file in `src/components/`, filename matches the exported component name.
-- Props declared as `interface <Name>Props` (or type alias) in the same file.
-- Enum knobs come from string literal unions.
+- Components live anywhere under `src/components/` (nested folders fine). Every exported capitalized function in a file is a component, so subcomponent files (Card + CardHeader) work.
+- Component names must be unique across the library. Duplicates get de-collided slugs and a `warnings` entry in the manifest.
+- Props declared as `interface <Name>Props` (or type alias with a type literal) in the same file as the component.
+- Enum knobs come from string or numeric literal unions. Imported prop types and computed types show as unsupported (visible in the manifest, no knob): the same graceful-degradation stance as react-docgen.
+- Composition: fixture values can be component references, `{ "$component": "Button", "props": {...}, "children": "..." }`, nestable. References serialize to JSON strings in the state URL, so composed states stay addressable and shareable (Storybook cannot URL-serialize JSX children at all; this is the workaround made first-class).
+- Usage scan covers the app AND the library itself; intra-library usages are tagged `internal` (impact analysis: edit Button, re-verify Card).

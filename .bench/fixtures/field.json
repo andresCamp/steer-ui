@@ -1,0 +1,14 @@
+{
+  "states": {
+    "default": {
+      "label": "Workspace name",
+      "children": { "$component": "Input", "props": { "placeholder": "acme-inc" } }
+    },
+    "required": {
+      "label": "Workspace name",
+      "required": "true",
+      "hint": "Lowercase letters and dashes only",
+      "children": { "$component": "Input", "props": { "placeholder": "acme-inc" } }
+    }
+  }
+}

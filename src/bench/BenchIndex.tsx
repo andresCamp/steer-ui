@@ -8,6 +8,7 @@ import {
   fetchNotes,
   registry,
   stateUrl,
+  stringifyFixtureValues,
   type BenchComponentSpec,
 } from "./data"
 
@@ -25,10 +26,11 @@ function Specimen(props: { spec: BenchComponentSpec; index: number }) {
     const names = Object.keys(all)
     return names.length > 0 ? names : ["default"]
   }
-  const valuesFor = (state: string) => ({
-    ...(fixture()?.states?.default ?? {}),
-    ...(fixture()?.states?.[state] ?? {}),
-  })
+  const valuesFor = (state: string) =>
+    stringifyFixtureValues({
+      ...(fixture()?.states?.default ?? {}),
+      ...(fixture()?.states?.[state] ?? {}),
+    })
 
   /** Canonical key for a knob-value set, order-independent. */
   const stateKey = (values: Record<string, string>) =>

@@ -29,6 +29,7 @@ import {
   resolveNote,
   selectorWithin,
   stateUrl,
+  stringifyFixtureValues,
   type BenchComponentSpec,
   type BenchNote,
   type BenchProp,
@@ -155,8 +156,11 @@ export function BenchComponent() {
     manifest()?.components.find((c) => c.slug === params.slug)
   )
 
+  const fixtureState = (name: string): Record<string, string> =>
+    stringifyFixtureValues(fixture()?.states?.[name] ?? {})
+
   const knobValues = createMemo<Record<string, string>>(() => {
-    const base: Record<string, string> = { ...(fixture()?.states?.default ?? {}) }
+    const base: Record<string, string> = { ...fixtureState("default") }
     for (const [key, value] of Object.entries(searchParams)) {
       if (typeof value === "string") base[key] = value
     }
@@ -171,10 +175,11 @@ export function BenchComponent() {
   const currentUrl = createMemo(() => stateUrl(params.slug, knobValues()))
 
   const activeFixtureState = createMemo(() => {
-    const states = fixture()?.states ?? {}
     const current = JSON.stringify(knobValues())
-    for (const [name, values] of Object.entries(states)) {
-      if (JSON.stringify({ ...(states.default ?? {}), ...values }) === current) return name
+    for (const name of Object.keys(fixture()?.states ?? {})) {
+      if (JSON.stringify({ ...fixtureState("default"), ...fixtureState(name) }) === current) {
+        return name
+      }
     }
     return undefined
   })
@@ -1014,8 +1019,8 @@ export function BenchComponent() {
                             for (const key of Object.keys(searchParams)) cleared[key] = undefined
                             setSearchParams({
                               ...cleared,
-                              ...(fixture()?.states?.default ?? {}),
-                              ...(fixture()?.states?.[name] ?? {}),
+                              ...fixtureState("default"),
+                              ...fixtureState(name),
                             })
                           }}
                           data-bench-fixture={name}
@@ -1061,6 +1066,11 @@ export function BenchComponent() {
                         title={usage.snippet}
                       >
                         {usage.file.replace("src/", "")}:{usage.line}
+                        <Show when={usage.internal}>
+                          <span class="ml-2 rounded-md bg-black/[0.04] px-1.5 py-0.5 text-[13px] text-zinc-400">
+                            internal
+                          </span>
+                        </Show>
                       </a>
                     )}
                   </For>

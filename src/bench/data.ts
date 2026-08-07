@@ -1,4 +1,4 @@
-import type { Component } from "solid-js"
+import { createComponent, type Component, type JSX } from "solid-js"
 
 // --- shared types (mirror of tooling/bench-plugin.ts output) ---------------
 
@@ -6,6 +6,7 @@ export interface BenchProp {
   name: string
   kind: "enum" | "boolean" | "string" | "number" | "children" | "unsupported"
   options?: string[]
+  numeric?: boolean
   optional: boolean
   description?: string
   raw: string
@@ -15,6 +16,7 @@ export interface BenchUsage {
   file: string
   line: number
   snippet: string
+  internal?: boolean
 }
 
 export interface BenchComponentSpec {
@@ -29,11 +31,25 @@ export interface BenchComponentSpec {
 export interface BenchManifest {
   generatedAt: string
   root: string
+  warnings?: string[]
   components: BenchComponentSpec[]
 }
 
+/**
+ * Fixture values are strings, or component references for composition:
+ * { "$component": "Button", "props": {...}, "children": "..." }.
+ * References serialize to JSON strings in the state URL, so every composed
+ * state is still addressable.
+ */
+export type FixtureValue = string | ComponentRef
+export interface ComponentRef {
+  $component: string
+  props?: Record<string, unknown>
+  children?: FixtureValue
+}
+
 export interface BenchFixture {
-  states: Record<string, Record<string, string>>
+  states: Record<string, Record<string, FixtureValue>>
 }
 
 export interface BenchReply {
@@ -59,17 +75,21 @@ export interface BenchNote {
 }
 
 // --- component registry, derived from the filesystem via glob --------------
+// Recursive, and registers EVERY exported capitalized component per module,
+// so nested folders and subcomponent files all resolve.
 
-const modules = import.meta.glob("../components/*.tsx", { eager: true }) as Record<
+const modules = import.meta.glob("../components/**/*.tsx", { eager: true }) as Record<
   string,
-  Record<string, Component<Record<string, unknown>>>
+  Record<string, unknown>
 >
 
 export const registry: Record<string, Component<Record<string, unknown>>> = {}
-for (const [file, mod] of Object.entries(modules)) {
-  const name = file.split("/").pop()!.replace(".tsx", "")
-  const component = mod[name] ?? mod.default
-  if (component) registry[name] = component
+for (const mod of Object.values(modules)) {
+  for (const [exportName, value] of Object.entries(mod)) {
+    if (typeof value === "function" && /^[A-Z]/.test(exportName)) {
+      registry[exportName] = value as Component<Record<string, unknown>>
+    }
+  }
 }
 
 // --- api client ------------------------------------------------------------
@@ -126,6 +146,47 @@ export const resolveNote = (slug: string, id: string): Promise<BenchNote> =>
 
 // --- prop coercion ---------------------------------------------------------
 
+/** Render a fixture component reference against the registry. */
+function renderRef(ref: ComponentRef): JSX.Element | string {
+  const component = registry[ref.$component]
+  if (!component) return `[unknown component: ${ref.$component}]`
+  const props: Record<string, unknown> = { ...(ref.props ?? {}) }
+  if (ref.children !== undefined) props.children = resolveFixtureValue(ref.children)
+  return createComponent(component, props)
+}
+
+/**
+ * A children value is a plain string, or a JSON component reference
+ * ({"$component": ...}) — from a fixture object or serialized in the URL.
+ */
+export function resolveFixtureValue(value: FixtureValue): unknown {
+  if (typeof value === "string") {
+    if (value.startsWith("{")) {
+      try {
+        const parsed = JSON.parse(value)
+        if (parsed && typeof parsed === "object" && "$component" in parsed) {
+          return renderRef(parsed as ComponentRef)
+        }
+      } catch {
+        // not JSON: fall through to the plain string
+      }
+    }
+    return value
+  }
+  return renderRef(value)
+}
+
+/** Fixture values → knob strings (refs become JSON, staying URL-safe). */
+export function stringifyFixtureValues(
+  values: Record<string, FixtureValue>
+): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const [key, value] of Object.entries(values)) {
+    out[key] = typeof value === "string" ? value : JSON.stringify(value)
+  }
+  return out
+}
+
 /** Turn URL search params (all strings) into typed props per the manifest. */
 export function coerceProps(
   spec: BenchComponentSpec,
@@ -143,9 +204,13 @@ export function coerceProps(
         props[prop.name] = Number(value)
         break
       case "enum":
+        props[prop.name] = prop.numeric ? Number(value) : value
+        break
       case "string":
-      case "children":
         props[prop.name] = value
+        break
+      case "children":
+        props[prop.name] = resolveFixtureValue(value)
         break
     }
   }

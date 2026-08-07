@@ -17,6 +17,8 @@ export interface BenchProp {
   name: string
   kind: "enum" | "boolean" | "string" | "number" | "children" | "unsupported"
   options?: string[]
+  /** True when enum options are numeric literals; coerce back to number. */
+  numeric?: boolean
   optional: boolean
   description?: string
   raw: string
@@ -26,6 +28,8 @@ export interface BenchUsage {
   file: string
   line: number
   snippet: string
+  /** Usage inside the component library itself (composition), not the app. */
+  internal?: boolean
 }
 
 export interface BenchComponent {
@@ -40,7 +44,9 @@ export interface BenchComponent {
 const COMPONENT_DIR = "src/components"
 const BENCH_DIR = ".bench"
 
-function classifyType(type: ts.TypeNode | undefined): Pick<BenchProp, "kind" | "options" | "raw"> {
+function classifyType(
+  type: ts.TypeNode | undefined
+): Pick<BenchProp, "kind" | "options" | "numeric" | "raw"> {
   if (!type) return { kind: "unsupported", raw: "unknown" }
   const raw = type.getText()
   if (type.kind === ts.SyntaxKind.BooleanKeyword) return { kind: "boolean", raw }
@@ -48,8 +54,12 @@ function classifyType(type: ts.TypeNode | undefined): Pick<BenchProp, "kind" | "
   if (type.kind === ts.SyntaxKind.NumberKeyword) return { kind: "number", raw }
   if (ts.isUnionTypeNode(type)) {
     const literals: string[] = []
+    let numeric = true
     for (const member of type.types) {
       if (ts.isLiteralTypeNode(member) && ts.isStringLiteral(member.literal)) {
+        literals.push(member.literal.text)
+        numeric = false
+      } else if (ts.isLiteralTypeNode(member) && ts.isNumericLiteral(member.literal)) {
         literals.push(member.literal.text)
       } else if (member.kind === ts.SyntaxKind.UndefinedKeyword) {
         continue
@@ -57,7 +67,9 @@ function classifyType(type: ts.TypeNode | undefined): Pick<BenchProp, "kind" | "
         return { kind: "unsupported", raw }
       }
     }
-    if (literals.length > 0) return { kind: "enum", options: literals, raw }
+    if (literals.length > 0) {
+      return { kind: "enum", options: literals, ...(numeric ? { numeric: true } : {}), raw }
+    }
   }
   return { kind: "unsupported", raw }
 }
@@ -71,64 +83,92 @@ function jsDocText(node: ts.Node): string | undefined {
   return undefined
 }
 
-function extractComponent(filePath: string, source: string): Omit<BenchComponent, "usages"> | null {
-  const name = path.basename(filePath, ".tsx")
-  if (!/^[A-Z]/.test(name)) return null
+function hasExportModifier(node: ts.Node): boolean {
+  const modifiers = (node as { modifiers?: ts.NodeArray<ts.ModifierLike> }).modifiers
+  return !!modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword)
+}
+
+function extractProps(
+  members: ts.NodeArray<ts.TypeElement> | undefined
+): BenchProp[] {
+  const props: BenchProp[] = []
+  if (!members) return props
+  for (const member of members) {
+    if (!ts.isPropertySignature(member) || !member.name) continue
+    const propName = member.name.getText()
+    if (propName === "children") {
+      props.push({
+        name: "children",
+        kind: "children",
+        optional: !!member.questionToken,
+        description: jsDocText(member),
+        raw: member.type?.getText() ?? "JSX.Element",
+      })
+      continue
+    }
+    const classified = classifyType(member.type)
+    props.push({
+      name: propName,
+      optional: !!member.questionToken,
+      description: jsDocText(member),
+      ...classified,
+    })
+  }
+  return props
+}
+
+/**
+ * Extract EVERY exported capitalized component in a file, each paired with
+ * its `<Name>Props` declaration. Files can hold subcomponents
+ * (Card + CardHeader) and the manifest keeps them all.
+ */
+function extractComponents(filePath: string, source: string): Omit<BenchComponent, "usages">[] {
   const sf = ts.createSourceFile(filePath, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
 
-  let propsMembers: ts.NodeArray<ts.TypeElement> | undefined
-  let componentDoc: string | undefined
+  const propsByName = new Map<string, ts.NodeArray<ts.TypeElement>>()
+  const exported = new Map<string, string | undefined>() // name -> jsdoc
 
   const visit = (node: ts.Node) => {
-    if (ts.isInterfaceDeclaration(node) && node.name.text === `${name}Props`) {
-      propsMembers = node.members
+    if (ts.isInterfaceDeclaration(node) && node.name.text.endsWith("Props")) {
+      propsByName.set(node.name.text, node.members)
     }
     if (
       ts.isTypeAliasDeclaration(node) &&
-      node.name.text === `${name}Props` &&
+      node.name.text.endsWith("Props") &&
       ts.isTypeLiteralNode(node.type)
     ) {
-      propsMembers = node.type.members
+      propsByName.set(node.name.text, node.type.members)
     }
     if (
-      (ts.isFunctionDeclaration(node) && node.name?.text === name) ||
-      (ts.isVariableStatement(node) &&
-        node.declarationList.declarations.some(
-          (d) => ts.isIdentifier(d.name) && d.name.text === name
-        ))
+      ts.isFunctionDeclaration(node) &&
+      node.name &&
+      /^[A-Z]/.test(node.name.text) &&
+      hasExportModifier(node)
     ) {
-      componentDoc = componentDoc ?? jsDocText(node)
+      exported.set(node.name.text, jsDocText(node))
+    }
+    if (ts.isVariableStatement(node) && hasExportModifier(node)) {
+      for (const decl of node.declarationList.declarations) {
+        if (ts.isIdentifier(decl.name) && /^[A-Z]/.test(decl.name.text)) {
+          exported.set(decl.name.text, jsDocText(node))
+        }
+      }
     }
     ts.forEachChild(node, visit)
   }
   visit(sf)
 
-  const props: BenchProp[] = []
-  if (propsMembers) {
-    for (const member of propsMembers) {
-      if (!ts.isPropertySignature(member) || !member.name) continue
-      const propName = member.name.getText()
-      if (propName === "children") {
-        props.push({
-          name: "children",
-          kind: "children",
-          optional: !!member.questionToken,
-          description: jsDocText(member),
-          raw: member.type?.getText() ?? "JSX.Element",
-        })
-        continue
-      }
-      const classified = classifyType(member.type)
-      props.push({
-        name: propName,
-        optional: !!member.questionToken,
-        description: jsDocText(member),
-        ...classified,
-      })
-    }
+  const components: Omit<BenchComponent, "usages">[] = []
+  for (const [name, doc] of exported) {
+    components.push({
+      name,
+      slug: name.toLowerCase(),
+      file: filePath,
+      description: doc,
+      props: extractProps(propsByName.get(`${name}Props`)),
+    })
   }
-
-  return { name, slug: name.toLowerCase(), file: filePath, description: componentDoc, props }
+  return components
 }
 
 async function listFiles(dir: string, ext: string): Promise<string[]> {
@@ -150,22 +190,31 @@ async function listFiles(dir: string, ext: string): Promise<string[]> {
   return out
 }
 
-async function scanUsages(root: string, components: string[]): Promise<Map<string, BenchUsage[]>> {
+async function scanUsages(
+  root: string,
+  components: { name: string; file: string }[]
+): Promise<Map<string, BenchUsage[]>> {
   const usages = new Map<string, BenchUsage[]>()
-  for (const c of components) usages.set(c, [])
+  for (const c of components) usages.set(c.name, [])
   const files = await listFiles(path.join(root, "src"), ".tsx")
   for (const file of files) {
     const rel = path.relative(root, file)
-    // Usage means "rendered somewhere in the product", so the bench's own
-    // rendering machinery does not count.
-    if (rel.startsWith(COMPONENT_DIR) || rel.startsWith("src/bench")) continue
+    // The bench's own rendering machinery does not count as usage.
+    if (rel.startsWith("src/bench")) continue
+    const internal = rel.startsWith(COMPONENT_DIR)
     const source = await fs.readFile(file, "utf8")
     const lines = source.split("\n")
-    for (const name of components) {
-      const tag = new RegExp(`<${name}[\\s/>]`)
+    for (const c of components) {
+      if (internal && rel === c.file) continue // a component is not its own usage
+      const tag = new RegExp(`<${c.name}[\\s/>]`)
       lines.forEach((line, i) => {
         if (tag.test(line)) {
-          usages.get(name)!.push({ file: rel, line: i + 1, snippet: line.trim().slice(0, 120) })
+          usages.get(c.name)!.push({
+            file: rel,
+            line: i + 1,
+            snippet: line.trim().slice(0, 120),
+            ...(internal ? { internal: true } : {}),
+          })
         }
       })
     }
@@ -176,18 +225,32 @@ async function scanUsages(root: string, components: string[]): Promise<Map<strin
 async function generateManifest(root: string): Promise<void> {
   const componentFiles = await listFiles(path.join(root, COMPONENT_DIR), ".tsx")
   const specs: Omit<BenchComponent, "usages">[] = []
+  const warnings: string[] = []
   for (const file of componentFiles) {
     const source = await fs.readFile(file, "utf8")
-    const spec = extractComponent(file, source)
-    if (spec) specs.push({ ...spec, file: path.relative(root, file) })
+    for (const spec of extractComponents(file, source)) {
+      specs.push({ ...spec, file: path.relative(root, file) })
+    }
+  }
+  // Component names must be unique across the library; de-collide slugs so
+  // every component keeps an address, and surface the conflict.
+  const bySlug = new Map<string, number>()
+  for (const spec of specs) {
+    const seen = bySlug.get(spec.slug) ?? 0
+    if (seen > 0) {
+      warnings.push(`duplicate component name "${spec.name}" (${spec.file}); slug suffixed`)
+      spec.slug = `${spec.slug}-${seen + 1}`
+    }
+    bySlug.set(spec.name.toLowerCase(), seen + 1)
   }
   const usages = await scanUsages(
     root,
-    specs.map((s) => s.name)
+    specs.map((s) => ({ name: s.name, file: s.file }))
   )
   const manifest = {
     generatedAt: new Date().toISOString(),
     root,
+    ...(warnings.length > 0 ? { warnings } : {}),
     components: specs
       .map((s) => ({ ...s, usages: usages.get(s.name) ?? [] }))
       .sort((a, b) => a.name.localeCompare(b.name)),
