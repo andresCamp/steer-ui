@@ -1,5 +1,7 @@
 # Handoff: bench → primitive build
 
+> **Status: executed 2026-08-07.** The graduation this document commissioned is done: lab (`src/core|ports|adapters`), playground (CLI + visual bench), SPEC.md, and `skills/bench/`. This file remains as the distillation record and the canonical list of UI/UX decisions and gotchas (SPEC.md §8 points here).
+
 For the next agent. Andrés has approved graduating this toy into a real onc9 primitive via `primitive-constructor`. Everything below is what you need to not re-learn this project from scratch. Read `~/onc9-systems/primitives/PRIMITIVES.md` before starting; this repo is the distilled ancestor.
 
 ## What this is
