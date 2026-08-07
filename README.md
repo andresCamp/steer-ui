@@ -34,6 +34,7 @@ Agent-authored notes and replies render with indigo accents in the bench so auth
 ## Conventions the codegen expects
 
 - Components live anywhere under `src/components/` (nested folders fine). Every exported capitalized function in a file is a component, so subcomponent files (Card + CardHeader) work.
+- Compound components work via expando assignment: `Card.Actions = CardActions`. The target must also be a named export (dev-mode HMR wrappers hide expando properties, so the export is the reliable path) and should follow the `BaseSub` naming convention. The manifest lists only the dotted name; usage scan matches `<Card.Actions`.
 - Component names must be unique across the library. Duplicates get de-collided slugs and a `warnings` entry in the manifest.
 - Props declared as `interface <Name>Props` (or type alias with a type literal) in the same file as the component.
 - Enum knobs come from string or numeric literal unions. Imported prop types and computed types show as unsupported (visible in the manifest, no knob): the same graceful-degradation stance as react-docgen.

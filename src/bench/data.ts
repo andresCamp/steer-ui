@@ -91,6 +91,37 @@ for (const mod of Object.values(modules)) {
     }
   }
 }
+// Compound components: capitalized function properties attached to an
+// export (Card.Actions) register under their dotted name. Note: in dev,
+// solid-refresh wraps exports, so expando properties may be invisible
+// here; resolveComponent carries the fallbacks.
+for (const [name, component] of Object.entries({ ...registry })) {
+  for (const key of Object.getOwnPropertyNames(component)) {
+    const member = (component as unknown as Record<string, unknown>)[key]
+    if (/^[A-Z]/.test(key) && typeof member === "function") {
+      registry[`${name}.${key}`] = member as Component<Record<string, unknown>>
+    }
+  }
+}
+
+/**
+ * Resolve a manifest name to a renderable component. Dotted compound names
+ * fall back to property access on the base, then to the BaseSub naming
+ * convention (Card.Actions -> CardActions), which survives dev-mode HMR
+ * wrappers that hide expando properties.
+ */
+export function resolveComponent(
+  name: string
+): Component<Record<string, unknown>> | undefined {
+  if (registry[name]) return registry[name]
+  if (!name.includes(".")) return undefined
+  const [base, sub] = name.split(".")
+  const viaProperty = (registry[base] as unknown as Record<string, unknown> | undefined)?.[sub]
+  if (typeof viaProperty === "function") {
+    return viaProperty as Component<Record<string, unknown>>
+  }
+  return registry[`${base}${sub}`]
+}
 
 // --- api client ------------------------------------------------------------
 
@@ -148,7 +179,7 @@ export const resolveNote = (slug: string, id: string): Promise<BenchNote> =>
 
 /** Render a fixture component reference against the registry. */
 function renderRef(ref: ComponentRef): JSX.Element | string {
-  const component = registry[ref.$component]
+  const component = resolveComponent(ref.$component)
   if (!component) return `[unknown component: ${ref.$component}]`
   const props: Record<string, unknown> = { ...(ref.props ?? {}) }
   if (ref.children !== undefined) props.children = resolveFixtureValue(ref.children)

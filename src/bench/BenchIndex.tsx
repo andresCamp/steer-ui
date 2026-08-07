@@ -6,7 +6,7 @@ import {
   fetchFixture,
   fetchManifest,
   fetchNotes,
-  registry,
+  resolveComponent,
   stateUrl,
   stringifyFixtureValues,
   type BenchComponentSpec,
@@ -89,9 +89,9 @@ function Specimen(props: { spec: BenchComponentSpec; index: number }) {
               data-bench-state-preview={state}
             >
               <span class="pointer-events-none inline-block">
-                <Show when={registry[props.spec.name]}>
+                <Show when={resolveComponent(props.spec.name)}>
                   <Dynamic
-                    component={registry[props.spec.name]}
+                    component={resolveComponent(props.spec.name)}
                     {...coerceProps(props.spec, valuesFor(state))}
                   />
                 </Show>

@@ -29,11 +29,11 @@ export function DemoPage() {
         <Card title="Invite a teammate" footer="Invites expire after 7 days">
           <div class="flex flex-col gap-4">
             <Input label="Email" placeholder="teammate@acme.com" />
-            <div class="flex justify-end">
+            <Card.Actions align="right">
               <Button variant="secondary" size="sm">
                 Send invite
               </Button>
-            </div>
+            </Card.Actions>
           </div>
         </Card>
 

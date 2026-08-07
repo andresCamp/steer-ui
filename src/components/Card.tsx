@@ -29,3 +29,23 @@ export function Card(props: CardProps) {
     </div>
   )
 }
+
+export interface CardActionsProps {
+  /** Horizontal placement of the actions */
+  align?: "left" | "right" | "between"
+  children?: JSX.Element
+}
+
+const alignments: Record<string, string> = {
+  left: "justify-start",
+  right: "justify-end",
+  between: "justify-between",
+}
+
+/** Action row for card bodies; compound component (Card.Actions). */
+export function CardActions(props: CardActionsProps) {
+  const p = mergeProps({ align: "right" }, props)
+  return <div class={`flex items-center gap-2 pt-2 ${alignments[p.align]}`}>{p.children}</div>
+}
+
+Card.Actions = CardActions

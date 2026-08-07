@@ -1,0 +1,19 @@
+{
+  "states": {
+    "default": {
+      "children": {
+        "$component": "Button",
+        "props": { "variant": "primary", "size": "sm" },
+        "children": "Save"
+      }
+    },
+    "left": {
+      "align": "left",
+      "children": {
+        "$component": "Button",
+        "props": { "variant": "secondary", "size": "sm" },
+        "children": "Cancel"
+      }
+    }
+  }
+}

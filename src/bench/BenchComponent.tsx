@@ -24,8 +24,8 @@ import {
   fetchNotes,
   moveNote,
   postNote,
-  registry,
   replyNote,
+  resolveComponent,
   resolveNote,
   selectorWithin,
   stateUrl,
@@ -665,7 +665,7 @@ export function BenchComponent() {
                 data-bench-stage={s().slug}
                 data-bench-state={currentUrl()}
               >
-                <Dynamic component={registry[s().name]} {...componentProps()} />
+                <Dynamic component={resolveComponent(s().name)} {...componentProps()} />
 
                 {/* live region marquee while dragging a highlight */}
                 <Show when={regionDrag() ?? pending()?.rect}>

@@ -120,13 +120,17 @@ function extractProps(
 /**
  * Extract EVERY exported capitalized component in a file, each paired with
  * its `<Name>Props` declaration. Files can hold subcomponents
- * (Card + CardHeader) and the manifest keeps them all.
+ * (Card + CardHeader) and compound components (Card.Actions = CardActions),
+ * and the manifest keeps them all.
  */
 function extractComponents(filePath: string, source: string): Omit<BenchComponent, "usages">[] {
   const sf = ts.createSourceFile(filePath, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
 
   const propsByName = new Map<string, ts.NodeArray<ts.TypeElement>>()
-  const exported = new Map<string, string | undefined>() // name -> jsdoc
+  const declared = new Map<string, string | undefined>() // every capitalized fn -> jsdoc
+  const exported = new Set<string>()
+  // Compound assignments: Card.Actions = CardActions
+  const compounds: { name: string; base: string; target: string }[] = []
 
   const visit = (node: ts.Node) => {
     if (ts.isInterfaceDeclaration(node) && node.name.text.endsWith("Props")) {
@@ -139,33 +143,64 @@ function extractComponents(filePath: string, source: string): Omit<BenchComponen
     ) {
       propsByName.set(node.name.text, node.type.members)
     }
-    if (
-      ts.isFunctionDeclaration(node) &&
-      node.name &&
-      /^[A-Z]/.test(node.name.text) &&
-      hasExportModifier(node)
-    ) {
-      exported.set(node.name.text, jsDocText(node))
+    if (ts.isFunctionDeclaration(node) && node.name && /^[A-Z]/.test(node.name.text)) {
+      declared.set(node.name.text, jsDocText(node))
+      if (hasExportModifier(node)) exported.add(node.name.text)
     }
-    if (ts.isVariableStatement(node) && hasExportModifier(node)) {
+    if (ts.isVariableStatement(node)) {
       for (const decl of node.declarationList.declarations) {
         if (ts.isIdentifier(decl.name) && /^[A-Z]/.test(decl.name.text)) {
-          exported.set(decl.name.text, jsDocText(node))
+          declared.set(decl.name.text, jsDocText(node))
+          if (hasExportModifier(node)) exported.add(decl.name.text)
         }
       }
+    }
+    if (
+      ts.isExpressionStatement(node) &&
+      ts.isBinaryExpression(node.expression) &&
+      node.expression.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+      ts.isPropertyAccessExpression(node.expression.left) &&
+      ts.isIdentifier(node.expression.left.expression) &&
+      /^[A-Z]/.test(node.expression.left.expression.text) &&
+      /^[A-Z]/.test(node.expression.left.name.text) &&
+      ts.isIdentifier(node.expression.right)
+    ) {
+      compounds.push({
+        name: `${node.expression.left.expression.text}.${node.expression.left.name.text}`,
+        base: node.expression.left.expression.text,
+        target: node.expression.right.text,
+      })
     }
     ts.forEachChild(node, visit)
   }
   visit(sf)
 
   const components: Omit<BenchComponent, "usages">[] = []
-  for (const [name, doc] of exported) {
+  // Compound targets are absorbed into their dotted entry rather than
+  // listed twice (CardActions exists in the manifest only as Card.Actions).
+  const compoundTargets = new Set(
+    compounds.filter((c) => exported.has(c.base)).map((c) => c.target)
+  )
+  for (const name of exported) {
+    if (compoundTargets.has(name)) continue
     components.push({
       name,
       slug: name.toLowerCase(),
       file: filePath,
-      description: doc,
+      description: declared.get(name),
       props: extractProps(propsByName.get(`${name}Props`)),
+    })
+  }
+  // Compound components ride their base's export; props come from the
+  // assigned function's own Props declaration.
+  for (const compound of compounds) {
+    if (!exported.has(compound.base)) continue
+    components.push({
+      name: compound.name,
+      slug: compound.name.toLowerCase().replace(/\./g, "-"),
+      file: filePath,
+      description: declared.get(compound.target),
+      props: extractProps(propsByName.get(`${compound.target}Props`)),
     })
   }
   return components
@@ -206,7 +241,7 @@ async function scanUsages(
     const lines = source.split("\n")
     for (const c of components) {
       if (internal && rel === c.file) continue // a component is not its own usage
-      const tag = new RegExp(`<${c.name}[\\s/>]`)
+      const tag = new RegExp(`<${c.name.replace(/\./g, "\\.")}[\\s/>]`)
       lines.forEach((line, i) => {
         if (tag.test(line)) {
           usages.get(c.name)!.push({
