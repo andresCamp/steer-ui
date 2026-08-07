@@ -53,7 +53,12 @@ function scanUsages(
 }
 
 export function buildManifest(input: ManifestInput): BenchManifest {
-  const config: BenchConfig = { ...DEFAULT_CONFIG, ...input.config }
+  // Explicit ?? per field: callers pass partial configs with undefined
+  // properties, and an object spread would clobber the defaults with them.
+  const config: BenchConfig = {
+    componentDir: input.config?.componentDir ?? DEFAULT_CONFIG.componentDir,
+    excludeDirs: input.config?.excludeDirs ?? DEFAULT_CONFIG.excludeDirs,
+  }
   const specs: Omit<BenchComponentSpec, "usages">[] = []
   const warnings: string[] = []
   for (const file of input.componentFiles) {

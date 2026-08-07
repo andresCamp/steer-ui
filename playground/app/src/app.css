@@ -1,4 +1,7 @@
 @import "tailwindcss";
+/* The bench UI lives in the lab, outside this app root; register it so
+   Tailwind's class detection scans it. */
+@source "../../../src/adapters/solid";
 
 @theme {
   --font-sans: ui-sans-serif, system-ui, -apple-system, "SF Pro Text", "Segoe UI", sans-serif;

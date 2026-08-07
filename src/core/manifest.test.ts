@@ -90,6 +90,14 @@ describe("buildManifest", () => {
     expect(actionSlugs).toEqual(["card-actions", "card-actions-2"])
   })
 
+  it("treats explicitly-undefined config fields as absent", () => {
+    const manifest = buildManifest(
+      input({ config: { componentDir: undefined, excludeDirs: undefined } })
+    )
+    const button = manifest.components.find((c) => c.name === "Button")!
+    expect(button.usages.some((u) => u.file.startsWith("src/bench"))).toBe(false)
+  })
+
   it("sorts components by name for stable output", () => {
     const manifest = buildManifest(input())
     const names = manifest.components.map((c) => c.name)
