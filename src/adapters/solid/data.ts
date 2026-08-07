@@ -1,107 +1,75 @@
 import { createComponent, type Component, type JSX } from "solid-js"
+import type {
+  BenchComponentSpec,
+  BenchFixture,
+  BenchManifest,
+  BenchNote,
+  ComponentRef,
+  DoctorReport,
+  FixtureValue,
+} from "../../core/model"
+import { coerceProps as coercePropsCore } from "../../core/state-url"
 
-// --- shared types (mirror of tooling/bench-plugin.ts output) ---------------
+// Solid render surface glue: the component registry, fixture-ref rendering,
+// and the HTTP client for the bench API. The pure contract (types, URL
+// grammar, coercion) lives in core; this file only binds it to Solid.
 
-export interface BenchProp {
-  name: string
-  kind: "enum" | "boolean" | "string" | "number" | "children" | "unsupported"
-  options?: string[]
-  numeric?: boolean
-  optional: boolean
-  description?: string
-  raw: string
-}
+export type {
+  BenchComponentSpec,
+  BenchFixture,
+  BenchManifest,
+  BenchNote,
+  BenchProp,
+  BenchReply,
+  BenchUsage,
+  ComponentRef,
+  DoctorReport,
+  FixtureValue,
+} from "../../core/model"
+export {
+  sameState,
+  stateKey,
+  stateUrl,
+  parseStateUrl,
+  stringifyFixtureValues,
+} from "../../core/state-url"
 
-export interface BenchUsage {
-  file: string
-  line: number
-  snippet: string
-  internal?: boolean
-}
-
-export interface BenchComponentSpec {
-  name: string
-  slug: string
-  file: string
-  description?: string
-  /** For compound components: the underlying function's export name. */
-  target?: string
-  props: BenchProp[]
-  usages: BenchUsage[]
-}
-
-export interface BenchManifest {
-  generatedAt: string
-  root: string
-  warnings?: string[]
-  components: BenchComponentSpec[]
-}
-
-/**
- * Fixture values are strings, or component references for composition:
- * { "$component": "Button", "props": {...}, "children": "..." }.
- * References serialize to JSON strings in the state URL, so every composed
- * state is still addressable.
- */
-export type FixtureValue = string | ComponentRef
-export interface ComponentRef {
-  $component: string
-  props?: Record<string, unknown>
-  children?: FixtureValue
-}
-
-export interface BenchFixture {
-  states: Record<string, Record<string, FixtureValue>>
-}
-
-export interface BenchReply {
-  id: string
-  author: string
-  text: string
-  created: string
-}
-
-export interface BenchNote {
-  id: string
-  component: string
-  stateUrl: string
-  selector: string
-  coords: { x: number; y: number }
-  /** Optional highlighted region (stage-relative fractions, may exceed 0..1) */
-  rect?: { x: number; y: number; w: number; h: number }
-  text: string
-  author: string
-  status: "open" | "resolved"
-  created: string
-  replies?: BenchReply[]
-}
-
-// --- component registry, derived from the filesystem via glob --------------
-// Recursive, and registers EVERY exported capitalized component per module,
-// so nested folders and subcomponent files all resolve.
-
-const modules = import.meta.glob("../components/**/*.tsx", { eager: true }) as Record<
-  string,
-  Record<string, unknown>
->
+// --- component registry, provided by the host -------------------------------
+// The host owns the glob (import.meta.glob is resolved relative to the
+// calling file), so registration is a call the host makes at startup:
+//
+//   registerComponents(import.meta.glob("./components/**/*.tsx", { eager: true }))
+//
+// Registers EVERY exported capitalized component per module, so nested
+// folders and subcomponent files all resolve.
 
 export const registry: Record<string, Component<Record<string, unknown>>> = {}
-for (const mod of Object.values(modules)) {
-  for (const [exportName, value] of Object.entries(mod)) {
-    if (typeof value === "function" && /^[A-Z]/.test(exportName)) {
-      registry[exportName] = value as Component<Record<string, unknown>>
+
+/** The author identity attached to notes written from this bench UI. */
+export let benchAuthor = "human"
+
+export function registerComponents(
+  modules: Record<string, Record<string, unknown>>,
+  options: { author?: string } = {}
+): void {
+  if (options.author) benchAuthor = options.author
+  for (const mod of Object.values(modules)) {
+    for (const [exportName, value] of Object.entries(mod)) {
+      if (typeof value === "function" && /^[A-Z]/.test(exportName)) {
+        registry[exportName] = value as Component<Record<string, unknown>>
+      }
     }
   }
-}
-// Compound components: capitalized function properties attached to an
-// export (Card.Actions) register under their dotted name. Note: in dev,
-// solid-refresh wraps exports, so expando properties may be invisible
-// here; resolveComponent carries the fallbacks.
-for (const [name, component] of Object.entries({ ...registry })) {
-  for (const key of Object.getOwnPropertyNames(component)) {
-    const member = (component as unknown as Record<string, unknown>)[key]
-    if (/^[A-Z]/.test(key) && typeof member === "function") {
-      registry[`${name}.${key}`] = member as Component<Record<string, unknown>>
+  // Compound components: capitalized function properties attached to an
+  // export (Card.Actions) register under their dotted name. Note: in dev,
+  // solid-refresh wraps exports, so expando properties may be invisible
+  // here; resolveComponent carries the fallbacks.
+  for (const [name, component] of Object.entries({ ...registry })) {
+    for (const key of Object.getOwnPropertyNames(component)) {
+      const member = (component as unknown as Record<string, unknown>)[key]
+      if (/^[A-Z]/.test(key) && typeof member === "function") {
+        registry[`${name}.${key}`] = member as Component<Record<string, unknown>>
+      }
     }
   }
 }
@@ -137,6 +105,9 @@ export const fetchFixture = (slug: string): Promise<BenchFixture> =>
 
 export const fetchNotes = (slug: string): Promise<BenchNote[]> =>
   fetch(`/__bench/api/notes/${slug}`).then((r) => r.json())
+
+export const fetchDoctor = (): Promise<DoctorReport> =>
+  fetch("/__bench/api/doctor").then((r) => r.json())
 
 export const postNote = (
   slug: string,
@@ -179,7 +150,7 @@ export const resolveNote = (slug: string, id: string): Promise<BenchNote> =>
     body: JSON.stringify({ id }),
   }).then((r) => r.json())
 
-// --- prop coercion ---------------------------------------------------------
+// --- fixture-ref rendering -------------------------------------------------
 
 /** Render a fixture component reference against the registry. */
 function renderRef(ref: ComponentRef): JSX.Element | string {
@@ -211,55 +182,12 @@ export function resolveFixtureValue(value: FixtureValue): unknown {
   return renderRef(value)
 }
 
-/** Fixture values → knob strings (refs become JSON, staying URL-safe). */
-export function stringifyFixtureValues(
-  values: Record<string, FixtureValue>
-): Record<string, string> {
-  const out: Record<string, string> = {}
-  for (const [key, value] of Object.entries(values)) {
-    out[key] = typeof value === "string" ? value : JSON.stringify(value)
-  }
-  return out
-}
-
-/** Turn URL search params (all strings) into typed props per the manifest. */
+/** Core coercion bound to this registry's children renderer. */
 export function coerceProps(
   spec: BenchComponentSpec,
   values: Record<string, string | undefined>
 ): Record<string, unknown> {
-  const props: Record<string, unknown> = {}
-  for (const prop of spec.props) {
-    const value = values[prop.name]
-    if (value === undefined || value === "") continue
-    switch (prop.kind) {
-      case "boolean":
-        props[prop.name] = value === "true"
-        break
-      case "number":
-        props[prop.name] = Number(value)
-        break
-      case "enum":
-        props[prop.name] = prop.numeric ? Number(value) : value
-        break
-      case "string":
-        props[prop.name] = value
-        break
-      case "children":
-        props[prop.name] = resolveFixtureValue(value)
-        break
-    }
-  }
-  return props
-}
-
-/** Serialize the current knob values into a shareable bench URL. */
-export function stateUrl(slug: string, values: Record<string, string>): string {
-  const params = new URLSearchParams()
-  for (const [key, value] of Object.entries(values)) {
-    if (value !== "" && value !== undefined) params.set(key, value)
-  }
-  const query = params.toString()
-  return `/__bench/${slug}${query ? `?${query}` : ""}`
+  return coercePropsCore(spec, values, (value) => resolveFixtureValue(value))
 }
 
 /** Build a CSS selector for an element, scoped to the bench stage. */

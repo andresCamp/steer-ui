@@ -6,7 +6,9 @@ import {
   fetchFixture,
   fetchManifest,
   fetchNotes,
+  parseStateUrl,
   resolveComponent,
+  stateKey,
   stateUrl,
   stringifyFixtureValues,
   type BenchComponentSpec,
@@ -32,15 +34,7 @@ function Specimen(props: { spec: BenchComponentSpec; index: number }) {
       ...(fixture()?.states?.[state] ?? {}),
     })
 
-  /** Canonical key for a knob-value set, order-independent. */
-  const stateKey = (values: Record<string, string>) =>
-    JSON.stringify(Object.entries(values).sort(([a], [b]) => a.localeCompare(b)))
-
-  const noteKey = (noteStateUrl: string) => {
-    const values: Record<string, string> = {}
-    new URLSearchParams(noteStateUrl.split("?")[1] ?? "").forEach((v, k) => (values[k] = v))
-    return stateKey(values)
-  }
+  const noteKey = (noteStateUrl: string) => stateKey(parseStateUrl(noteStateUrl).values)
 
   const openNotes = () => (notes() ?? []).filter((n) => n.status === "open")
 

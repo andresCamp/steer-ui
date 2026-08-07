@@ -3,14 +3,13 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "jsx": "preserve",
-    "jsxImportSource": "solid-js",
     "strict": true,
-    "noEmit": true,
-    "isolatedModules": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "types": ["vite/client"]
+    "noEmit": true,
+    "isolatedModules": true,
+    "lib": ["ES2022", "DOM"],
+    "types": []
   },
-  "include": ["src", "tooling", "vite.config.ts"]
+  "include": ["src/core/**/*", "src/ports/**/*", "src/adapters/memory.ts"]
 }

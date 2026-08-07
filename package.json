@@ -2,23 +2,29 @@
   "name": "bench",
   "private": true,
   "license": "MIT",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": { ".": "./src/index.ts" },
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "dev": "vite playground/app",
+    "test": "vitest run",
+    "check-types": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.app.json --noEmit",
+    "playground": "bun playground/run.ts"
   },
   "dependencies": {
     "@solidjs/router": "^0.15.3",
     "lucide-solid": "^1.30.0",
-    "solid-js": "^1.9.7"
+    "solid-js": "^1.9.7",
+    "typescript": "^5.8.3"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.11",
+    "@types/node": "^24.0.0",
     "tailwindcss": "^4.1.11",
-    "typescript": "^5.8.3",
     "vite": "^6.3.5",
-    "vite-plugin-solid": "^2.11.6"
+    "vite-plugin-solid": "^2.11.6",
+    "vitest": "^3.2.4"
   }
 }

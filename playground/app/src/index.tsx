@@ -2,8 +2,9 @@
 import { render } from "solid-js/web"
 import { Router, Route } from "@solidjs/router"
 import { DemoPage } from "./demo/DemoPage"
-import { BenchIndex } from "./bench/BenchIndex"
-import { BenchComponent } from "./bench/BenchComponent"
+import { BenchIndex } from "../../../src/adapters/solid/BenchIndex"
+import { BenchComponent } from "../../../src/adapters/solid/BenchComponent"
+import "./bench"
 import "./app.css"
 
 render(

@@ -18,15 +18,18 @@ import MessageSquarePlus from "lucide-solid/icons/message-square-plus"
 import RotateCcw from "lucide-solid/icons/rotate-ccw"
 import ArrowLeft from "lucide-solid/icons/arrow-left"
 import {
+  benchAuthor,
   coerceProps,
   fetchFixture,
   fetchManifest,
   fetchNotes,
   moveNote,
+  parseStateUrl,
   postNote,
   replyNote,
   resolveComponent,
   resolveNote,
+  sameState,
   selectorWithin,
   stateUrl,
   stringifyFixtureValues,
@@ -145,7 +148,7 @@ function Knob(props: {
 // --- page ------------------------------------------------------------------
 
 export function BenchComponent() {
-  const params = useParams()
+  const params = useParams<{ slug: string }>()
   const [searchParams, setSearchParams] = useSearchParams()
 
   const [manifest] = createResource(fetchManifest)
@@ -554,7 +557,7 @@ export function BenchComponent() {
       coords: p.coords,
       rect: p.rect,
       text: noteText().trim(),
-      author: "andres",
+      author: benchAuthor,
     })
     mutateNotes((prev) => [...(prev ?? []), saved])
     setPending(undefined)
@@ -575,7 +578,7 @@ export function BenchComponent() {
     const text = replyText().trim()
     if (!text) return
     setReplyText("")
-    const saved = await replyNote(params.slug, note.id, text, "andres")
+    const saved = await replyNote(params.slug, note.id, text, benchAuthor)
     mutateNotes((prev) => (prev ?? []).map((n) => (n.id === note.id ? saved : n)))
   }
 
@@ -591,17 +594,8 @@ export function BenchComponent() {
   const navigate = useNavigate()
 
   /** Does a note belong to the knob state currently on screen? */
-  const noteMatchesState = (note: BenchNote) => {
-    const query = note.stateUrl.split("?")[1] ?? ""
-    const noteValues: Record<string, string> = {}
-    new URLSearchParams(query).forEach((value, key) => (noteValues[key] = value))
-    const current = knobValues()
-    const keys = new Set([...Object.keys(current), ...Object.keys(noteValues)])
-    for (const key of keys) {
-      if ((current[key] ?? "") !== (noteValues[key] ?? "")) return false
-    }
-    return true
-  }
+  const noteMatchesState = (note: BenchNote) =>
+    sameState(knobValues(), parseStateUrl(note.stateUrl).values)
 
   // Hotkey: "c" toggles note mode (unless typing in a field).
   const onKey = (e: KeyboardEvent) => {

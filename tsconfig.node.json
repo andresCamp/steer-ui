@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": [
+    "src/index.ts",
+    "src/adapters/node-fs.ts",
+    "src/adapters/vite.ts",
+    "playground/run.ts",
+    "playground/app/vite.config.ts"
+  ]
+}
