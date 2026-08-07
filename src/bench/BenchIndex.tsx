@@ -89,9 +89,9 @@ function Specimen(props: { spec: BenchComponentSpec; index: number }) {
               data-bench-state-preview={state}
             >
               <span class="pointer-events-none inline-block">
-                <Show when={resolveComponent(props.spec.name)}>
+                <Show when={resolveComponent(props.spec.name, props.spec.target)}>
                   <Dynamic
-                    component={resolveComponent(props.spec.name)}
+                    component={resolveComponent(props.spec.name, props.spec.target)}
                     {...coerceProps(props.spec, valuesFor(state))}
                   />
                 </Show>

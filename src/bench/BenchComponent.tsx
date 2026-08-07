@@ -665,7 +665,7 @@ export function BenchComponent() {
                 data-bench-stage={s().slug}
                 data-bench-state={currentUrl()}
               >
-                <Dynamic component={resolveComponent(s().name)} {...componentProps()} />
+                <Dynamic component={resolveComponent(s().name, s().target)} {...componentProps()} />
 
                 {/* live region marquee while dragging a highlight */}
                 <Show when={regionDrag() ?? pending()?.rect}>

@@ -1,6 +1,6 @@
 # bench
 
-Toy prototype of an agent-first component workshop. The thesis: Storybook's core artifact (the hand-authored story file) should not exist. Everything here is derived from source or captured as data.
+Open source (MIT). Toy prototype of an agent-first component workshop. The thesis: Storybook's core artifact (the hand-authored story file) should not exist. Everything here is derived from source or captured as data.
 
 ## What it does
 
@@ -34,7 +34,7 @@ Agent-authored notes and replies render with indigo accents in the bench so auth
 ## Conventions the codegen expects
 
 - Components live anywhere under `src/components/` (nested folders fine). Every exported capitalized function in a file is a component, so subcomponent files (Card + CardHeader) work.
-- Compound components work via expando assignment: `Card.Actions = CardActions`. The target must also be a named export (dev-mode HMR wrappers hide expando properties, so the export is the reliable path) and should follow the `BaseSub` naming convention. The manifest lists only the dotted name; usage scan matches `<Card.Actions`.
+- Compound components work via both idioms: expando assignment (`Card.Actions = CardActions`) and `export const Toolbar = Object.assign(ToolbarRoot, { Spacer: ToolbarSpacer })`. Targets should also be named exports (dev-mode HMR wrappers hide runtime properties, so the export is the reliable render path; the manifest records the target name as a fallback). The manifest lists only the dotted name, absorbing the standalone target and the root; usage scan matches `<Card.Actions`. An `Object.assign` base without its own `<Name>Props` takes props from its root function's declaration.
 - Component names must be unique across the library. Duplicates get de-collided slugs and a `warnings` entry in the manifest.
 - Props declared as `interface <Name>Props` (or type alias with a type literal) in the same file as the component.
 - Enum knobs come from string or numeric literal unions. Imported prop types and computed types show as unsupported (visible in the manifest, no knob): the same graceful-degradation stance as react-docgen.

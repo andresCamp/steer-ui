@@ -24,6 +24,8 @@ export interface BenchComponentSpec {
   slug: string
   file: string
   description?: string
+  /** For compound components: the underlying function's export name. */
+  target?: string
   props: BenchProp[]
   usages: BenchUsage[]
 }
@@ -111,9 +113,11 @@ for (const [name, component] of Object.entries({ ...registry })) {
  * wrappers that hide expando properties.
  */
 export function resolveComponent(
-  name: string
+  name: string,
+  target?: string
 ): Component<Record<string, unknown>> | undefined {
   if (registry[name]) return registry[name]
+  if (target && registry[target]) return registry[target]
   if (!name.includes(".")) return undefined
   const [base, sub] = name.split(".")
   const viaProperty = (registry[base] as unknown as Record<string, unknown> | undefined)?.[sub]

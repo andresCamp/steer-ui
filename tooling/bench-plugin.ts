@@ -37,6 +37,8 @@ export interface BenchComponent {
   slug: string
   file: string
   description?: string
+  /** For compound components: the underlying function's export name. */
+  target?: string
   props: BenchProp[]
   usages: BenchUsage[]
 }
@@ -129,8 +131,11 @@ function extractComponents(filePath: string, source: string): Omit<BenchComponen
   const propsByName = new Map<string, ts.NodeArray<ts.TypeElement>>()
   const declared = new Map<string, string | undefined>() // every capitalized fn -> jsdoc
   const exported = new Set<string>()
-  // Compound assignments: Card.Actions = CardActions
+  // Compound assignments: Card.Actions = CardActions (expando) or
+  // const Card = Object.assign(CardRoot, { Actions: CardActions })
   const compounds: { name: string; base: string; target: string }[] = []
+  // Object.assign bases: exported name -> root function name (for props/doc)
+  const assignRoots = new Map<string, string>()
 
   const visit = (node: ts.Node) => {
     if (ts.isInterfaceDeclaration(node) && node.name.text.endsWith("Props")) {
@@ -152,6 +157,47 @@ function extractComponents(filePath: string, source: string): Omit<BenchComponen
         if (ts.isIdentifier(decl.name) && /^[A-Z]/.test(decl.name.text)) {
           declared.set(decl.name.text, jsDocText(node))
           if (hasExportModifier(node)) exported.add(decl.name.text)
+          // Object.assign idiom: const Card = Object.assign(CardRoot, { Actions: CardActions })
+          if (
+            decl.initializer &&
+            ts.isCallExpression(decl.initializer) &&
+            ts.isPropertyAccessExpression(decl.initializer.expression) &&
+            ts.isIdentifier(decl.initializer.expression.expression) &&
+            decl.initializer.expression.expression.text === "Object" &&
+            decl.initializer.expression.name.text === "assign" &&
+            decl.initializer.arguments.length >= 2
+          ) {
+            const [rootArg, ...memberArgs] = decl.initializer.arguments
+            if (ts.isIdentifier(rootArg)) {
+              assignRoots.set(decl.name.text, rootArg.text)
+            }
+            for (const memberArg of memberArgs) {
+              if (!ts.isObjectLiteralExpression(memberArg)) continue
+              for (const prop of memberArg.properties) {
+                if (
+                  ts.isPropertyAssignment(prop) &&
+                  ts.isIdentifier(prop.name) &&
+                  /^[A-Z]/.test(prop.name.text) &&
+                  ts.isIdentifier(prop.initializer)
+                ) {
+                  compounds.push({
+                    name: `${decl.name.text}.${prop.name.text}`,
+                    base: decl.name.text,
+                    target: prop.initializer.text,
+                  })
+                } else if (
+                  ts.isShorthandPropertyAssignment(prop) &&
+                  /^[A-Z]/.test(prop.name.text)
+                ) {
+                  compounds.push({
+                    name: `${decl.name.text}.${prop.name.text}`,
+                    base: decl.name.text,
+                    target: prop.name.text,
+                  })
+                }
+              }
+            }
+          }
         }
       }
     }
@@ -181,14 +227,20 @@ function extractComponents(filePath: string, source: string): Omit<BenchComponen
   const compoundTargets = new Set(
     compounds.filter((c) => exported.has(c.base)).map((c) => c.target)
   )
+  const rootTargets = new Set(assignRoots.values())
   for (const name of exported) {
-    if (compoundTargets.has(name)) continue
+    if (compoundTargets.has(name) || rootTargets.has(name)) continue
+    // Object.assign bases take props/doc from their root function when
+    // their own <Name>Props does not exist (CardRoot holds CardProps).
+    const root = assignRoots.get(name)
     components.push({
       name,
       slug: name.toLowerCase(),
       file: filePath,
-      description: declared.get(name),
-      props: extractProps(propsByName.get(`${name}Props`)),
+      description: declared.get(name) ?? (root ? declared.get(root) : undefined),
+      props: extractProps(
+        propsByName.get(`${name}Props`) ?? (root ? propsByName.get(`${root}Props`) : undefined)
+      ),
     })
   }
   // Compound components ride their base's export; props come from the
@@ -200,6 +252,7 @@ function extractComponents(filePath: string, source: string): Omit<BenchComponen
       slug: compound.name.toLowerCase().replace(/\./g, "-"),
       file: filePath,
       description: declared.get(compound.target),
+      target: compound.target,
       props: extractProps(propsByName.get(`${compound.target}Props`)),
     })
   }
