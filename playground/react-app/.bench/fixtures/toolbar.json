@@ -1,0 +1,19 @@
+{
+  "states": {
+    "default": {
+      "tone": "raised",
+      "children": {
+        "$component": "Button",
+        "props": { "variant": "secondary", "size": "sm" },
+        "children": "Export"
+      }
+    },
+    "plain": {
+      "children": {
+        "$component": "Badge",
+        "props": { "tone": "success", "dot": true },
+        "children": "Synced"
+      }
+    }
+  }
+}

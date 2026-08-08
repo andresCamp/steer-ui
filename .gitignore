@@ -1,4 +1,5 @@
 node_modules
 dist
 playground/app/.bench/manifest.json
+playground/react-app/.bench/manifest.json
 .playwright-mcp/

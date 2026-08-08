@@ -1,0 +1,12 @@
+{
+  "states": {
+    "default": { "children": "Save changes" },
+    "secondary": { "variant": "secondary", "children": "Cancel" },
+    "destructive": { "variant": "destructive", "children": "Delete project" },
+    "ghost": { "variant": "ghost", "children": "Learn more" },
+    "loading": { "loading": "true", "children": "Saving" },
+    "disabled": { "disabled": "true", "children": "Unavailable" },
+    "small": { "size": "sm", "children": "Save" },
+    "large": { "size": "lg", "children": "Get started" }
+  }
+}
