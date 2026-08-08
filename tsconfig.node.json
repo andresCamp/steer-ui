@@ -6,6 +6,9 @@
   "include": [
     "src/index.ts",
     "src/adapters/node-fs.ts",
+    "src/adapters/http.ts",
+    "src/adapters/node-server.ts",
+    "src/adapters/node-server.test.ts",
     "src/adapters/vite.ts",
     "playground/run.ts",
     "playground/app/vite.config.ts"
