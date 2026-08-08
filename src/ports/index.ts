@@ -72,5 +72,5 @@ export interface EngineDeps {
   notes?: NoteStore
   clock?: Clock
   ids?: Ids
-  config?: { componentDir?: string; excludeDirs?: string[] }
+  config?: { componentDir?: string; excludeDirs?: string[]; typecheck?: boolean }
 }

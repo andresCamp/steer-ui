@@ -13,8 +13,9 @@ import type { BenchManifest, BenchNote, SourceFile } from "../core/model"
 
 export function memorySources(root: string, files: SourceFile[], componentDir = "src/components") {
   const store: SourceStore = {
-    componentFiles: async () => files.filter((f) => f.path.startsWith(componentDir)),
-    scanFiles: async () => files.filter((f) => f.path.endsWith(".tsx")),
+    componentFiles: async () =>
+      files.filter((f) => f.path.startsWith(componentDir) && f.path.endsWith(".tsx")),
+    scanFiles: async () => files.filter((f) => /\.tsx?$/.test(f.path)),
     root: () => root,
   }
   return store

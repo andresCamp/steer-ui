@@ -40,6 +40,7 @@ const engine = createEngine({
   notes,
   clock: fixedClock("2026-01-01T09:00:00.000Z"),
   ids: seqIds(),
+  config: { typecheck: true },
 })
 
 // --- 1. derive ---------------------------------------------------------------
@@ -56,6 +57,26 @@ for (const c of manifest.components) {
   )
 }
 for (const w of manifest.warnings ?? []) console.log(`  warning: ${w}`)
+
+// --- 1b. checked extraction --------------------------------------------------
+
+heading("checked extraction: imported prop types become knobs")
+const { buildManifest } = await import("../src/core/manifest")
+const syntacticAlert = buildManifest({
+  root: "(playground)",
+  generatedAt: "2026-01-01T09:00:00.000Z",
+  componentFiles: await memorySources("(playground)", uniqueFiles).componentFiles(),
+  scanFiles: uniqueFiles,
+}).components.find((c) => c.slug === "alert")
+const checkedAlert = manifest.components.find((c) => c.slug === "alert")
+console.log(
+  `  Alert props: syntactic sees ${syntacticAlert?.props.length ?? 0} (type alias over an intersection), checked sees ${checkedAlert?.props.length ?? 0}`
+)
+for (const p of checkedAlert?.props ?? []) {
+  console.log(
+    `    ${p.name.padEnd(12)} ${p.kind}${p.options ? ` [${p.options.join(", ")}]` : ""}${p.description ? `  (${p.description})` : ""}`
+  )
+}
 
 // --- 2. address --------------------------------------------------------------
 

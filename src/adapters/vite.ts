@@ -14,6 +14,8 @@ export interface BenchPluginOptions {
   componentDir?: string
   /** Directories excluded from the usage scan (where the bench UI is installed). */
   excludeDirs?: string[]
+  /** Resolve imported/intersection Props types through the TS checker. */
+  typecheck?: boolean
 }
 
 const BENCH_DIR = ".bench"
@@ -56,6 +58,7 @@ export function bench(options: BenchPluginOptions = {}): Plugin {
         config: {
           componentDir: options.componentDir,
           excludeDirs: options.excludeDirs,
+          typecheck: options.typecheck,
         },
       })
     },
@@ -69,7 +72,7 @@ export function bench(options: BenchPluginOptions = {}): Plugin {
     },
     configureServer(server: ViteDevServer) {
       server.watcher.on("all", (_event, file) => {
-        if (file.includes(`${path.sep}src${path.sep}`) && file.endsWith(".tsx")) regenerate()
+        if (file.includes(`${path.sep}src${path.sep}`) && /\.tsx?$/.test(file)) regenerate()
       })
 
       server.middlewares.use(async (req, res, next) => {

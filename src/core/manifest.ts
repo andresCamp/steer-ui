@@ -1,4 +1,5 @@
 import { extractComponents } from "./extract"
+import { upgradePropsChecked } from "./extract-checked"
 import {
   DEFAULT_CONFIG,
   type BenchComponentSpec,
@@ -30,6 +31,9 @@ function scanUsages(
   const usages = new Map<string, BenchUsage[]>()
   for (const c of components) usages.set(c.name, [])
   for (const { path: rel, source } of scanFiles) {
+    // Only JSX files can contain usages; .ts files ride along for the
+    // checker but stay out of the scan.
+    if (!rel.endsWith(".tsx")) continue
     // The bench's own rendering machinery does not count as usage.
     if (config.excludeDirs.some((dir) => rel.startsWith(dir))) continue
     const internal = rel.startsWith(config.componentDir)
@@ -58,13 +62,22 @@ export function buildManifest(input: ManifestInput): BenchManifest {
   const config: BenchConfig = {
     componentDir: input.config?.componentDir ?? DEFAULT_CONFIG.componentDir,
     excludeDirs: input.config?.excludeDirs ?? DEFAULT_CONFIG.excludeDirs,
+    typecheck: input.config?.typecheck ?? DEFAULT_CONFIG.typecheck,
   }
-  const specs: Omit<BenchComponentSpec, "usages">[] = []
+  let specs: Omit<BenchComponentSpec, "usages">[] = []
   const warnings: string[] = []
   for (const file of input.componentFiles) {
     for (const spec of extractComponents(file.path, file.source)) {
       specs.push(spec)
     }
+  }
+  if (config.typecheck) {
+    // The checker needs everything the Props types can reach, not just the
+    // component files (imported types live anywhere in the scanned tree).
+    const reachable = [...new Map(
+      [...input.componentFiles, ...input.scanFiles].map((f) => [f.path, f])
+    ).values()]
+    specs = upgradePropsChecked(specs, reachable)
   }
   // Component names must be unique across the library; de-collide slugs so
   // every component keeps an address, and surface the conflict.

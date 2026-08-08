@@ -107,11 +107,18 @@ export interface BenchConfig {
   componentDir: string
   /** Directories excluded from the usage scan (the bench's own machinery). */
   excludeDirs: string[]
+  /**
+   * Resolve Props types through the TypeScript checker (imported, aliased,
+   * and intersection types become real knobs). Costs a virtual program per
+   * regeneration; syntactic extraction stays the default.
+   */
+  typecheck: boolean
 }
 
 export const DEFAULT_CONFIG: BenchConfig = {
   componentDir: "src/components",
   excludeDirs: ["src/bench"],
+  typecheck: false,
 }
 
 /** The route base is part of the contract, not configuration. */

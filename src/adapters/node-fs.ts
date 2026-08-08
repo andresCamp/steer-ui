@@ -9,7 +9,8 @@ import type { BenchManifest, BenchNote, SourceFile } from "../core/model"
 
 const BENCH_DIR = ".bench"
 
-async function listFiles(dir: string, ext: string): Promise<string[]> {
+async function listFiles(dir: string, exts: string | string[]): Promise<string[]> {
+  const suffixes = Array.isArray(exts) ? exts : [exts]
   const out: string[] = []
   const walk = async (d: string) => {
     let entries
@@ -21,15 +22,19 @@ async function listFiles(dir: string, ext: string): Promise<string[]> {
     for (const entry of entries) {
       const full = path.join(d, entry.name)
       if (entry.isDirectory()) await walk(full)
-      else if (entry.name.endsWith(ext)) out.push(full)
+      else if (suffixes.some((ext) => entry.name.endsWith(ext))) out.push(full)
     }
   }
   await walk(dir)
   return out
 }
 
-async function readSources(root: string, dir: string, ext: string): Promise<SourceFile[]> {
-  const files = await listFiles(path.join(root, dir), ext)
+async function readSources(
+  root: string,
+  dir: string,
+  exts: string | string[]
+): Promise<SourceFile[]> {
+  const files = await listFiles(path.join(root, dir), exts)
   return Promise.all(
     files.map(async (file) => ({
       path: path.relative(root, file),
@@ -46,7 +51,9 @@ export function fsSources(
   const scanDir = options.scanDir ?? "src"
   return {
     componentFiles: () => readSources(root, componentDir, ".tsx"),
-    scanFiles: () => readSources(root, scanDir, ".tsx"),
+    // .ts included so checked extraction can reach imported type modules;
+    // the usage scan only pattern-matches JSX so plain .ts files are inert.
+    scanFiles: () => readSources(root, scanDir, [".tsx", ".ts"]),
     root: () => root,
   }
 }

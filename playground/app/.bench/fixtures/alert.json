@@ -1,0 +1,9 @@
+{
+  "states": {
+    "default": { "title": "Scheduled maintenance", "children": "The console will be read-only on Sunday from 02:00 to 03:00 UTC." },
+    "success": { "tone": "success", "title": "Backup complete", "children": "All 14 projects exported." },
+    "danger": { "tone": "danger", "title": "Payment failed", "children": "Update the card on file to keep deployments running.", "dismissable": "true" },
+    "dense": { "density": "1", "title": "Compact notice" },
+    "airy": { "density": "3", "title": "Roomy notice", "children": "Density three gives the message more air." }
+  }
+}

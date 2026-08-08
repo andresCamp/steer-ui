@@ -3,6 +3,7 @@ import { Button } from "../components/Button"
 import { Badge } from "../components/Badge"
 import { Input } from "../components/Input"
 import { Card } from "../components/Card"
+import { Alert } from "../components/Alert"
 
 /** A small fake product page so components have real usage sites. */
 export function DemoPage() {
@@ -25,7 +26,11 @@ export function DemoPage() {
         </div>
       </header>
 
-      <div class="grid grid-cols-2 gap-6">
+      <Alert tone="info" title="Scheduled maintenance" dismissable>
+        The console will be read-only on Sunday from 02:00 to 03:00 UTC.
+      </Alert>
+
+      <div class="mt-6 grid grid-cols-2 gap-6">
         <Card title="Invite a teammate" footer="Invites expire after 7 days">
           <div class="flex flex-col gap-4">
             <Input label="Email" placeholder="teammate@acme.com" />
