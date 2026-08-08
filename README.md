@@ -16,7 +16,8 @@ Built as an [onc9 primitive](SPEC.md): a pure hexagonal engine (`src/`), an offl
 
 ```
 pnpm install
-pnpm dev        # visual bench: app at :5199, bench at /__bench
+pnpm dev        # Solid visual bench: app at :5199, bench at /__bench
+pnpm dev:react  # React visual bench: same thing at :5299
 pnpm playground # CLI bench: the full engine loop, offline and deterministic
 pnpm test       # invariant-pinned tests
 pnpm check-types
@@ -25,12 +26,16 @@ pnpm check-types
 ## Layout
 
 ```
-src/core        pure engine: extraction, manifest, state URLs, notes, doctor
+src/core        pure engine: extraction (syntactic + type-checked), manifest,
+                state URLs, notes, doctor
 src/ports       the contract; SourceStore+ManifestStore required, rest optional
-src/adapters    memory, node-fs, vite (driving), solid/ (render surface)
-playground      CLI bench + a real Vite/Solid host app as the visual bench
+src/adapters    memory, node-fs, http (shared routes), vite + node-server
+                (driving), client (shared), solid/ + react/ (render surfaces)
+playground      CLI bench + Solid and React host apps as visual benches
 skills/bench    the agent front door: install / work / doctor / uninstall
 ```
+
+Imported or intersection prop types? Turn on `bench({ typecheck: true })` and the manifest resolves them through the TypeScript checker instead of marking them unsupported. Non-Vite dev server? `createBenchServer` runs the same API standalone; the host proxies `/__bench/api/*`.
 
 ## Agent protocol (notes)
 

@@ -39,7 +39,7 @@ HTTP API: GET manifest | GET doctor | GET fixtures/<slug> | GET/POST notes/<slug
 
 ### install
 
-1. **Detect** the host: bundler (Vite?), framework (Solid? React?), component dir, router, Tailwind version. Read `references/install-playbook.md` and follow the stack recipe. If the stack has no recipe (non-Vite, non-Solid), say so honestly and stop; porting the driving adapter or render surface is lab work, not install-time improvisation.
+1. **Detect** the host: bundler (Vite? else the standalone server + proxy), framework (Solid and React both have full surfaces), component dir, router, Tailwind version, and whether prop types are imported/intersections (turn on `typecheck`). Read `references/install-playbook.md` and follow the stack recipe. If the framework has no surface (Svelte, Vue), say so honestly and stop; building one is lab work, not install-time improvisation.
 2. **Copy** the engine and surface per the playbook (commit-hash comment as drift receipt), wire the plugin into the bundler config, mount `/__bench` routes, write the registry glue, scaffold `.bench/` (gitignore the manifest).
 3. **Inject** the CLAUDE.md block (`references/claude-md-block.md`): bench-is-truth, verify-after-edit, the notes protocol.
 4. **Verify**: start dev, `GET /__bench/api/doctor` must pass, open `/__bench` in Playwright and confirm the specimen sheet renders live components. Idempotent: re-running install repairs, never duplicates.

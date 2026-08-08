@@ -6,23 +6,25 @@ What exists, what is a named gap. Promote host-built pieces back to the lab via 
 
 | Language surface | Status |
 |---|---|
-| TypeScript TSX (`interface <Name>Props`, type-literal aliases, string/numeric literal unions, JSDoc, expando + Object.assign compounds) | **Built + tested** (`core/extract.ts`) |
-| Imported / intersection / computed prop types | Named gap: degrade to `unsupported` today; the upgrade is optional type-checker extraction behind the same `SourceFile[] -> specs` seam |
-| Svelte / Vue SFCs | Named gap: compiler-API extractors |
+| TypeScript TSX, syntactic (`interface <Name>Props`, type-literal aliases, string/numeric literal unions, JSDoc, expando + Object.assign compounds) | **Built + tested** (`core/extract.ts`) |
+| Imported / aliased / intersection Props types | **Built + tested** (`core/extract-checked.ts`, opt-in `typecheck: true`; resolves through the TS checker over a virtual program; unresolvable falls back to syntactic) |
+| Svelte / Vue SFCs | Named gap: compiler-API extractors behind the same `SourceFile[] -> specs` seam |
 
 ## Driving adapters (dev-server transport)
 
 | Transport | Status |
 |---|---|
-| Vite plugin (watch + `.bench/` HMR suppression + HTTP API) | **Built** (`adapters/vite.ts`); HMR suppression is load-bearing, any port must replicate it |
-| Next / webpack / raw express | Named gap |
+| Vite plugin (watch + `.bench/` HMR suppression + shared HTTP handler) | **Built + browser-verified** (`adapters/vite.ts`) |
+| Standalone node server (`adapters/node-server.ts`): framework-neutral API server, regenerate-on-read, host proxies `/__bench/api/*` | **Built + HTTP-tested**; recipes for Next rewrites / express proxy in the install playbook; not yet exercised against a real Next host |
+| Shared route table (`adapters/http.ts`) | **Built**; any node transport mounts it |
 
 ## Render surfaces
 
 | Framework | Status |
 |---|---|
-| Solid (specimen sheet + canvas + notes layer) | **Built + browser-verified** (`adapters/solid/`) |
-| React | Named gap: port the 3 surface files; registry glue stays ~10 lines |
+| Solid (specimen sheet + canvas + notes layer) | **Built + browser-verified** (`adapters/solid/`, exercised by `playground/app`) |
+| React 19 + react-router 7 (full-parity port) | **Built + browser-verified** (`adapters/react/`, exercised by `playground/react-app`) |
+| Svelte / Vue | Named gap: surfaces do not exist; keep both ports in lockstep when the canvas evolves |
 
 ## Stores
 

@@ -56,7 +56,7 @@ Andrés (design review by feel, via the canvas), coding agents (the primary oper
 
 - **Source-only ESM TypeScript**; no build step; consumers transpile. `main`/`types` point at `./src/index.ts`.
 - **`core/**` + `ports/**` MUST stay free of Node globals and framework imports.** The one heavy dependency is the `typescript` package (the extractor); it is pure JS and dev-time only.
-- **The route base `/__bench` and the `.bench/` layout are contract, not configuration** (invariant 5). Configurable per host: `componentDir`, usage-scan `excludeDirs`.
+- **The route base `/__bench` and the `.bench/` layout are contract, not configuration** (invariant 5). Configurable per host: `componentDir`, usage-scan `excludeDirs`, `typecheck` (checker-backed prop extraction).
 - **Notes and fixtures MUST remain plain JSON files** inside the host repo; realtime multi-user sync is explicitly out of scope (single-machine by design).
 - **Dev-time only**: bench ships nothing to production bundles; the engine runs in the dev server, the UI mounts on dev routes.
 - Org constraints: every contract member has a bench-exercised implementation and a pinned test; the bench (unit level) MUST NOT hijack flow-level verification, which stays with Playwright against the real app.
@@ -96,29 +96,33 @@ The seams where hosts differ are the ports: source access, manifest/fixture/note
 
 ```
 src/
-├── core/            pure; zero I/O
-│   ├── model.ts     types + the five invariants
-│   ├── extract.ts   TS AST -> component specs (props, JSDoc, compounds)
-│   ├── manifest.ts  buildManifest: specs + usage scan + slug de-collision
-│   ├── state-url.ts stateUrl/parseStateUrl/coerceProps/sameState
-│   ├── notes.ts     create/reply/resolve/move as pure transitions
-│   ├── doctor.ts    runDoctor over gathered artifacts
-│   └── engine.ts    createEngine: the driving-port facade
-├── ports/index.ts   SourceStore + ManifestStore (required);
-│                    FixtureStore + NoteStore (optional, graceful absence);
-│                    Clock + Ids (injectable); BenchEngine (driving)
+├── core/
+│   ├── model.ts           types + the five invariants
+│   ├── extract.ts         TS AST -> component specs (syntactic, default)
+│   ├── extract-checked.ts type-checker upgrade: imported/aliased/
+│   │                      intersection Props (opt-in typecheck: true)
+│   ├── manifest.ts        buildManifest: specs + usage scan + de-collision
+│   ├── state-url.ts       stateUrl/parseStateUrl/coerceProps/sameState
+│   ├── notes.ts           create/reply/resolve/move as pure transitions
+│   ├── doctor.ts          runDoctor over gathered artifacts
+│   └── engine.ts          createEngine: the driving-port facade
+├── ports/index.ts         SourceStore + ManifestStore (required);
+│                          FixtureStore + NoteStore (optional, graceful
+│                          absence); Clock + Ids; BenchEngine (driving)
 └── adapters/
-    ├── memory.ts    every port in memory, with inspection helpers
-    ├── node-fs.ts   real stores over the host tree + .bench/
-    ├── vite.ts      driving adapter: regenerate-on-change, HMR
-    │                suppression for .bench/, the HTTP API
-    └── solid/       render surface: registry glue (host calls
-                     registerComponents), data client, BenchIndex
-                     (specimen sheet), BenchComponent (canvas)
+    ├── memory.ts          every port in memory, with inspection helpers
+    ├── node-fs.ts         real stores over the host tree + .bench/
+    ├── http.ts            the shared HTTP route table (all transports)
+    ├── vite.ts            driving adapter: watch + HMR suppression + http
+    ├── node-server.ts     driving adapter: standalone API server for
+    │                      non-Vite hosts (proxy target; regen-on-read)
+    ├── client.ts          framework-neutral browser client + selector
+    ├── solid/             Solid render surface (reference)
+    └── react/             React render surface (full-parity port)
 playground/
-├── run.ts           CLI bench: full loop offline, deterministic
-└── app/             visual bench: a real Vite+Solid host with demo
-                     components, fixtures, and committed notes
+├── run.ts                 CLI bench: full loop offline, deterministic
+├── app/                   visual bench: Vite+Solid host (typecheck on)
+└── react-app/             visual bench: Vite+React host, same components
 ```
 
 The component registry deliberately lives in the HOST (`registerComponents(import.meta.glob(...))`): `import.meta.glob` resolves relative to the calling file, so the glue must be host-side. It is the entire per-host render contract (~10 lines).
@@ -186,8 +190,10 @@ The playground app is the reference deployment and MUST stay runnable offline: `
 | Stale manifest detected | `engine.test.ts` + `doctor.test.ts` freshness checks |
 | Duplicate names (incl. compounds) stay addressable | `manifest.test.ts` de-collision tests (lineage bug fixed) |
 | Explicit-undefined config cannot clobber defaults | `manifest.test.ts` config-merge test (found live, then pinned) |
+| Imported/aliased/intersection Props become knobs under `typecheck` | `extract-checked.test.ts` (plus the syntactic-fallback case) |
+| The API is transport-identical | `node-server.test.ts` runs the full lifecycle over real HTTP with no bundler |
 | Full loop works offline | `playground/run.ts` (deterministic CLI run) |
-| Full loop works in a real browser | Playwright pass over `/__bench` and canvas routes (manual gate, each change) |
+| Full loop works in a real browser, on both surfaces | Playwright pass over `/__bench` and canvas routes in `playground/app` (Solid) and `playground/react-app` (React) |
 
 ---
 
@@ -195,10 +201,11 @@ The playground app is the reference deployment and MUST stay runnable offline: `
 
 | Item | Status |
 |---|---|
-| Imported / intersection prop types show as `unsupported` | Known limit; the right upgrade is optional type-checker extraction behind the same extract seam |
-| React/Svelte/Vue extractors and render surfaces | Contractual but unbuilt; contract is framework-neutral, only the Solid surface exists |
-| Non-Vite driving adapters (Next, raw express) | Unbuilt; `adapters/vite.ts` is the only transport |
-| Note popovers can clip at viewport top | Known UI debt (flip-below-when-no-headroom unimplemented) |
+| Svelte/Vue extractors and render surfaces | Named gap; the extract seam and the shared client are ready for them |
+| Next.js surface mounting (router mapping for the React surface) | Recipe drafted in the install playbook; not exercised against a real Next host |
+| Two surfaces to keep in lockstep | Solid is the reference; every canvas change must be ported to `adapters/react/` in the same commit |
+| Checked extraction cost | A TS program per regeneration; opt-in per host, debounce absorbs it in practice |
+| Note popovers can clip at viewport top | Known UI debt (flip-below-when-no-headroom unimplemented, both surfaces) |
 | Relative timestamps don't tick live | Cosmetic, accepted |
 | Realtime multi-human sync | Out of scope by design (files, single machine) |
 | `benchAuthor` is a module global | Fine for dev-tool scope; revisit if multi-user editing ever lands |
