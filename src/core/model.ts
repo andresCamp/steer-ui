@@ -1,4 +1,4 @@
-// bench domain model. Pure types, zero I/O, zero framework. The hexagon's center.
+// steer domain model. Pure types, zero I/O, zero framework. The hexagon's center.
 //
 // Invariants everything downstream must hold:
 //   1. The manifest is derived, never authored — regeneration is a pure function of
@@ -10,10 +10,10 @@
 //   4. Degrade visibly, never crash — unsupported prop types, missing fixtures, and
 //      unknown components become warnings and no-op fallbacks the operator can see.
 //   5. The contract is framework-neutral — manifest schema, state URL grammar, notes
-//      shape, and the .bench/ layout are identical across frameworks and bundlers;
+//      shape, and the .steer/ layout are identical across frameworks and bundlers;
 //      only extractors, transports, and render surfaces vary.
 
-export interface BenchProp {
+export interface SteerProp {
   name: string
   kind: "enum" | "boolean" | "string" | "number" | "children" | "unsupported"
   options?: string[]
@@ -24,7 +24,7 @@ export interface BenchProp {
   raw: string
 }
 
-export interface BenchUsage {
+export interface SteerUsage {
   file: string
   line: number
   snippet: string
@@ -32,22 +32,22 @@ export interface BenchUsage {
   internal?: boolean
 }
 
-export interface BenchComponentSpec {
+export interface SteerComponentSpec {
   name: string
   slug: string
   file: string
   description?: string
   /** For compound components: the underlying function's export name. */
   target?: string
-  props: BenchProp[]
-  usages: BenchUsage[]
+  props: SteerProp[]
+  usages: SteerUsage[]
 }
 
-export interface BenchManifest {
+export interface SteerManifest {
   generatedAt: string
   root: string
   warnings?: string[]
-  components: BenchComponentSpec[]
+  components: SteerComponentSpec[]
 }
 
 /**
@@ -64,18 +64,18 @@ export interface ComponentRef {
   children?: FixtureValue
 }
 
-export interface BenchFixture {
+export interface SteerFixture {
   states: Record<string, Record<string, FixtureValue>>
 }
 
-export interface BenchReply {
+export interface SteerReply {
   id: string
   author: string
   text: string
   created: string
 }
 
-export interface BenchNote {
+export interface SteerNote {
   id: string
   component: string
   stateUrl: string
@@ -88,11 +88,11 @@ export interface BenchNote {
   author: string
   status: "open" | "resolved"
   created: string
-  replies?: BenchReply[]
+  replies?: SteerReply[]
 }
 
 export type NoteInput = Pick<
-  BenchNote,
+  SteerNote,
   "stateUrl" | "selector" | "coords" | "rect" | "text" | "author"
 >
 
@@ -102,10 +102,10 @@ export interface SourceFile {
   source: string
 }
 
-export interface BenchConfig {
+export interface SteerConfig {
   /** Where components live, relative to the host root. */
   componentDir: string
-  /** Directories excluded from the usage scan (the bench's own machinery). */
+  /** Directories excluded from the usage scan (the steer's own machinery). */
   excludeDirs: string[]
   /**
    * Resolve Props types through the TypeScript checker (imported, aliased,
@@ -115,14 +115,14 @@ export interface BenchConfig {
   typecheck: boolean
 }
 
-export const DEFAULT_CONFIG: BenchConfig = {
+export const DEFAULT_CONFIG: SteerConfig = {
   componentDir: "src/components",
-  excludeDirs: ["src/bench"],
+  excludeDirs: ["src/steer"],
   typecheck: false,
 }
 
 /** The route base is part of the contract, not configuration. */
-export const BENCH_BASE = "/__bench"
+export const STEER_BASE = "/__steer"
 
 export type DoctorStatus = "pass" | "warn" | "fail"
 

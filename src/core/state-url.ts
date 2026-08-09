@@ -1,6 +1,6 @@
-import { BENCH_BASE, type BenchComponentSpec, type FixtureValue } from "./model"
+import { STEER_BASE, type SteerComponentSpec, type FixtureValue } from "./model"
 
-// The state URL grammar: /__bench/<slug>?prop=value&... Every knob
+// The state URL grammar: /__steer/<slug>?prop=value&... Every knob
 // configuration is addressable; composed children ride as JSON strings.
 // This grammar is the contract's spine — encode and decode live together
 // here so no surface can drift.
@@ -16,20 +16,20 @@ export function stringifyFixtureValues(
   return out
 }
 
-/** Serialize knob values into a shareable bench URL. */
+/** Serialize knob values into a shareable steer URL. */
 export function stateUrl(slug: string, values: Record<string, string>): string {
   const params = new URLSearchParams()
   for (const [key, value] of Object.entries(values)) {
     if (value !== "" && value !== undefined) params.set(key, value)
   }
   const query = params.toString()
-  return `${BENCH_BASE}/${slug}${query ? `?${query}` : ""}`
+  return `${STEER_BASE}/${slug}${query ? `?${query}` : ""}`
 }
 
 /** Decode a state URL back into its slug and knob values. */
 export function parseStateUrl(url: string): { slug: string; values: Record<string, string> } {
   const [path, query] = url.split("?")
-  const slug = path.startsWith(`${BENCH_BASE}/`) ? path.slice(BENCH_BASE.length + 1) : path
+  const slug = path.startsWith(`${STEER_BASE}/`) ? path.slice(STEER_BASE.length + 1) : path
   const values: Record<string, string> = {}
   new URLSearchParams(query ?? "").forEach((value, key) => (values[key] = value))
   return { slug, values }
@@ -56,7 +56,7 @@ export function sameState(a: Record<string, string>, b: Record<string, string>):
  * it they stay strings (URL round-trips remain lossless either way).
  */
 export function coerceProps(
-  spec: BenchComponentSpec,
+  spec: SteerComponentSpec,
   values: Record<string, string | undefined>,
   resolveChildren?: (value: string) => unknown
 ): Record<string, unknown> {

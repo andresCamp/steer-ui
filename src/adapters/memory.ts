@@ -6,9 +6,9 @@ import type {
   NoteStore,
   SourceStore,
 } from "../ports"
-import type { BenchManifest, BenchNote, SourceFile } from "../core/model"
+import type { SteerManifest, SteerNote, SourceFile } from "../core/model"
 
-// In-memory implementations of every port: bench and test fuel. Each store
+// In-memory implementations of every port: steer and test fuel. Each store
 // exposes inspection helpers so tests read state without side channels.
 
 export function memorySources(root: string, files: SourceFile[], componentDir = "src/components") {
@@ -21,9 +21,9 @@ export function memorySources(root: string, files: SourceFile[], componentDir = 
   return store
 }
 
-export function memoryManifest(initial?: BenchManifest) {
+export function memoryManifest(initial?: SteerManifest) {
   let stored = initial
-  const store: ManifestStore & { current(): BenchManifest | undefined } = {
+  const store: ManifestStore & { current(): SteerManifest | undefined } = {
     read: async () => stored,
     write: async (manifest) => {
       stored = manifest
@@ -44,9 +44,9 @@ export function memoryFixtures(fixtures: Record<string, string> = {}) {
   return store
 }
 
-export function memoryNotes(initial: Record<string, BenchNote[]> = {}) {
-  const notes: Record<string, BenchNote[]> = { ...initial }
-  const store: NoteStore & { all(): Record<string, BenchNote[]> } = {
+export function memoryNotes(initial: Record<string, SteerNote[]> = {}) {
+  const notes: Record<string, SteerNote[]> = { ...initial }
+  const store: NoteStore & { all(): Record<string, SteerNote[]> } = {
     read: async (slug) => notes[slug] ?? [],
     write: async (slug, next) => {
       notes[slug] = next

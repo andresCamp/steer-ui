@@ -1,7 +1,7 @@
 import type {
-  BenchFixture,
-  BenchManifest,
-  BenchNote,
+  SteerFixture,
+  SteerManifest,
+  SteerNote,
   DoctorReport,
   NoteInput,
   SourceFile,
@@ -23,8 +23,8 @@ export interface SourceStore {
 }
 
 export interface ManifestStore {
-  read(): Promise<BenchManifest | undefined>
-  write(manifest: BenchManifest): Promise<void>
+  read(): Promise<SteerManifest | undefined>
+  write(manifest: SteerManifest): Promise<void>
 }
 
 export interface FixtureStore {
@@ -34,8 +34,8 @@ export interface FixtureStore {
 }
 
 export interface NoteStore {
-  read(slug: string): Promise<BenchNote[]>
-  write(slug: string, notes: BenchNote[]): Promise<void>
+  read(slug: string): Promise<SteerNote[]>
+  write(slug: string, notes: SteerNote[]): Promise<void>
   list(): Promise<string[]>
 }
 
@@ -48,20 +48,20 @@ export interface Ids {
 }
 
 /** The driving port: everything a transport (HTTP middleware, CLI) can ask. */
-export interface BenchEngine {
-  regenerate(): Promise<BenchManifest>
-  manifest(): Promise<BenchManifest | undefined>
-  fixture(slug: string): Promise<BenchFixture>
-  notes(slug: string): Promise<BenchNote[]>
-  addNote(slug: string, input: NoteInput): Promise<BenchNote | undefined>
-  reply(slug: string, id: string, text: string, author: string): Promise<BenchNote | undefined>
-  resolve(slug: string, id: string): Promise<BenchNote | undefined>
+export interface SteerEngine {
+  regenerate(): Promise<SteerManifest>
+  manifest(): Promise<SteerManifest | undefined>
+  fixture(slug: string): Promise<SteerFixture>
+  notes(slug: string): Promise<SteerNote[]>
+  addNote(slug: string, input: NoteInput): Promise<SteerNote | undefined>
+  reply(slug: string, id: string, text: string, author: string): Promise<SteerNote | undefined>
+  resolve(slug: string, id: string): Promise<SteerNote | undefined>
   move(
     slug: string,
     id: string,
     coords: { x: number; y: number },
     rect?: { x: number; y: number; w: number; h: number }
-  ): Promise<BenchNote | undefined>
+  ): Promise<SteerNote | undefined>
   doctor(): Promise<DoctorReport>
 }
 

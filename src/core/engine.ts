@@ -1,8 +1,8 @@
-import type { BenchEngine, EngineDeps } from "../ports"
+import type { SteerEngine, EngineDeps } from "../ports"
 import { runDoctor } from "./doctor"
 import { buildManifest } from "./manifest"
 import { createNote, moveNoteById, replyToNoteById, resolveNoteById } from "./notes"
-import type { BenchFixture, BenchManifest, BenchNote, NoteInput } from "./model"
+import type { SteerFixture, SteerManifest, SteerNote, NoteInput } from "./model"
 
 // The engine: pure orchestration of the ports. No I/O of its own, no
 // framework, no transport — an HTTP middleware, a CLI, and a test all drive
@@ -18,11 +18,11 @@ function randomIds() {
   }
 }
 
-export function createEngine(deps: EngineDeps): BenchEngine {
+export function createEngine(deps: EngineDeps): SteerEngine {
   const clock = deps.clock ?? realClock
   const ids = deps.ids ?? randomIds()
 
-  const rebuild = async (): Promise<BenchManifest> =>
+  const rebuild = async (): Promise<SteerManifest> =>
     buildManifest({
       root: deps.sources.root(),
       generatedAt: clock.now(),
@@ -33,8 +33,8 @@ export function createEngine(deps: EngineDeps): BenchEngine {
 
   const withNotes = async <T>(
     slug: string,
-    op: (notes: BenchNote[]) => { notes: BenchNote[]; note: BenchNote } | undefined
-  ): Promise<BenchNote | undefined> => {
+    op: (notes: SteerNote[]) => { notes: SteerNote[]; note: SteerNote } | undefined
+  ): Promise<SteerNote | undefined> => {
     if (!deps.notes) return undefined
     const result = op(await deps.notes.read(slug))
     if (!result) return undefined
@@ -51,11 +51,11 @@ export function createEngine(deps: EngineDeps): BenchEngine {
 
     manifest: () => deps.manifestStore.read(),
 
-    async fixture(slug): Promise<BenchFixture> {
+    async fixture(slug): Promise<SteerFixture> {
       const raw = await deps.fixtures?.readRaw(slug)
       if (!raw) return { states: {} }
       try {
-        return JSON.parse(raw) as BenchFixture
+        return JSON.parse(raw) as SteerFixture
       } catch {
         return { states: {} }
       }
@@ -82,7 +82,7 @@ export function createEngine(deps: EngineDeps): BenchEngine {
         const raw = await deps.fixtures!.readRaw(slug)
         if (raw !== undefined) fixtures[slug] = raw
       }
-      const notes: Record<string, BenchNote[]> = {}
+      const notes: Record<string, SteerNote[]> = {}
       for (const slug of (await deps.notes?.list()) ?? []) {
         notes[slug] = await deps.notes!.read(slug)
       }

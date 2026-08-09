@@ -1,19 +1,19 @@
 import { createComponent, type Component, type JSX } from "solid-js"
-import type { BenchComponentSpec, ComponentRef, FixtureValue } from "../../core/model"
+import type { SteerComponentSpec, ComponentRef, FixtureValue } from "../../core/model"
 import { coerceProps as coercePropsCore } from "../../core/state-url"
 
 // Solid render surface glue: the component registry, fixture-ref rendering,
-// and the HTTP client for the bench API. The pure contract (types, URL
+// and the HTTP client for the steer API. The pure contract (types, URL
 // grammar, coercion) lives in core; this file only binds it to Solid.
 
 export type {
-  BenchComponentSpec,
-  BenchFixture,
-  BenchManifest,
-  BenchNote,
-  BenchProp,
-  BenchReply,
-  BenchUsage,
+  SteerComponentSpec,
+  SteerFixture,
+  SteerManifest,
+  SteerNote,
+  SteerProp,
+  SteerReply,
+  SteerUsage,
   ComponentRef,
   DoctorReport,
   FixtureValue,
@@ -37,14 +37,14 @@ export {
 
 export const registry: Record<string, Component<Record<string, unknown>>> = {}
 
-/** The author identity attached to notes written from this bench UI. */
-export let benchAuthor = "human"
+/** The author identity attached to notes written from this steer UI. */
+export let steerAuthor = "human"
 
 export function registerComponents(
   modules: Record<string, Record<string, unknown>>,
   options: { author?: string } = {}
 ): void {
-  if (options.author) benchAuthor = options.author
+  if (options.author) steerAuthor = options.author
   for (const mod of Object.values(modules)) {
     for (const [exportName, value] of Object.entries(mod)) {
       if (typeof value === "function" && /^[A-Z]/.test(exportName)) {
@@ -135,7 +135,7 @@ export function resolveFixtureValue(value: FixtureValue): unknown {
 
 /** Core coercion bound to this registry's children renderer. */
 export function coerceProps(
-  spec: BenchComponentSpec,
+  spec: SteerComponentSpec,
   values: Record<string, string | undefined>
 ): Record<string, unknown> {
   return coercePropsCore(spec, values, (value) => resolveFixtureValue(value))

@@ -1,4 +1,4 @@
-import type { BenchNote, NoteInput } from "./model"
+import type { SteerNote, NoteInput } from "./model"
 
 // Note operations: pure transitions over a component's note list. Every
 // operation returns a NEW list — the engine never deletes a note or reply,
@@ -11,12 +11,12 @@ export interface NoteContext {
 }
 
 export function createNote(
-  notes: BenchNote[],
+  notes: SteerNote[],
   component: string,
   input: NoteInput,
   ctx: NoteContext
-): { notes: BenchNote[]; note: BenchNote } {
-  const note: BenchNote = {
+): { notes: SteerNote[]; note: SteerNote } {
+  const note: SteerNote = {
     id: ctx.id("note"),
     component,
     stateUrl: input.stateUrl ?? "",
@@ -32,14 +32,14 @@ export function createNote(
 }
 
 export function replyToNoteById(
-  notes: BenchNote[],
+  notes: SteerNote[],
   id: string,
   reply: { text: string; author: string },
   ctx: NoteContext
-): { notes: BenchNote[]; note: BenchNote } | undefined {
+): { notes: SteerNote[]; note: SteerNote } | undefined {
   const existing = notes.find((n) => n.id === id)
   if (!existing) return undefined
-  const updated: BenchNote = {
+  const updated: SteerNote = {
     ...existing,
     replies: [
       ...(existing.replies ?? []),
@@ -55,26 +55,26 @@ export function replyToNoteById(
 }
 
 export function resolveNoteById(
-  notes: BenchNote[],
+  notes: SteerNote[],
   id: string
-): { notes: BenchNote[]; note: BenchNote } | undefined {
+): { notes: SteerNote[]; note: SteerNote } | undefined {
   const existing = notes.find((n) => n.id === id)
   if (!existing) return undefined
-  const updated: BenchNote = { ...existing, status: "resolved" }
+  const updated: SteerNote = { ...existing, status: "resolved" }
   return { notes: notes.map((n) => (n.id === id ? updated : n)), note: updated }
 }
 
 export function moveNoteById(
-  notes: BenchNote[],
+  notes: SteerNote[],
   id: string,
   coords: { x: number; y: number },
   rect?: { x: number; y: number; w: number; h: number }
-): { notes: BenchNote[]; note: BenchNote } | undefined {
+): { notes: SteerNote[]; note: SteerNote } | undefined {
   const existing = notes.find((n) => n.id === id)
   if (!existing) return undefined
   // A move without a rect leaves an existing region in place; passing a
   // rect (from a region drag/resize) replaces it.
-  const updated: BenchNote = {
+  const updated: SteerNote = {
     ...existing,
     coords,
     ...(rect !== undefined ? { rect } : {}),

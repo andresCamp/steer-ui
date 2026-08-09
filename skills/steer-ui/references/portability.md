@@ -14,8 +14,8 @@ What exists, what is a named gap. Promote host-built pieces back to the lab via 
 
 | Transport | Status |
 |---|---|
-| Vite plugin (watch + `.bench/` HMR suppression + shared HTTP handler) | **Built + browser-verified** (`adapters/vite.ts`) |
-| Standalone node server (`adapters/node-server.ts`): framework-neutral API server, regenerate-on-read, host proxies `/__bench/api/*` | **Built + HTTP-tested**; recipes for Next rewrites / express proxy in the install playbook; not yet exercised against a real Next host |
+| Vite plugin (watch + `.steer/` HMR suppression + shared HTTP handler) | **Built + browser-verified** (`adapters/vite.ts`) |
+| Standalone node server (`adapters/node-server.ts`): framework-neutral API server, regenerate-on-read, host proxies `/__steer/api/*` | **Built + HTTP-tested**; recipes for Next rewrites / express proxy in the install playbook; not yet exercised against a real Next host |
 | Shared route table (`adapters/http.ts`) | **Built**; any node transport mounts it |
 
 ## Render surfaces
@@ -30,8 +30,8 @@ What exists, what is a named gap. Promote host-built pieces back to the lab via 
 
 | Store | Status |
 |---|---|
-| node-fs over `.bench/` | **Built** |
-| memory (bench/test fuel) | **Built** |
+| node-fs over `.steer/` | **Built** |
+| memory (steer-ui/test fuel) | **Built** |
 
 ## Hosts applied
 

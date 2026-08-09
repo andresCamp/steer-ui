@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http"
-import type { BenchEngine } from "../ports"
+import type { SteerEngine } from "../ports"
 
 // The HTTP surface of the engine, transport-agnostic: one handler any node
 // server can mount (Vite middleware, the standalone server, an express
@@ -21,7 +21,7 @@ function json(res: ServerResponse, status: number, data: unknown): void {
   res.end(JSON.stringify(data))
 }
 
-export interface BenchRequestOptions {
+export interface SteerRequestOptions {
   /**
    * Regenerate before answering manifest/doctor reads. Transports without a
    * file watcher (the standalone server) set this so reads are always fresh;
@@ -31,21 +31,21 @@ export interface BenchRequestOptions {
 }
 
 /**
- * Handle one request against the bench API. Returns false (without touching
- * the response) when the URL is not a bench API route, so callers can fall
+ * Handle one request against the steer API. Returns false (without touching
+ * the response) when the URL is not a steer API route, so callers can fall
  * through to their own handling.
  */
-export async function handleBenchRequest(
-  engine: BenchEngine,
+export async function handleSteerRequest(
+  engine: SteerEngine,
   req: IncomingMessage,
   res: ServerResponse,
-  options: BenchRequestOptions = {}
+  options: SteerRequestOptions = {}
 ): Promise<boolean> {
   const url = new URL(req.url ?? "/", "http://localhost")
-  if (!url.pathname.startsWith("/__bench/api/")) return false
+  if (!url.pathname.startsWith("/__steer/api/")) return false
 
   try {
-    if (url.pathname === "/__bench/api/manifest" && req.method === "GET") {
+    if (url.pathname === "/__steer/api/manifest" && req.method === "GET") {
       if (options.regenerateOnRead) await engine.regenerate()
       const manifest = await engine.manifest()
       if (!manifest) json(res, 503, { error: "manifest not generated yet" })
@@ -53,19 +53,19 @@ export async function handleBenchRequest(
       return true
     }
 
-    if (url.pathname === "/__bench/api/doctor" && req.method === "GET") {
+    if (url.pathname === "/__steer/api/doctor" && req.method === "GET") {
       if (options.regenerateOnRead) await engine.regenerate()
       json(res, 200, await engine.doctor())
       return true
     }
 
-    const fixtureMatch = url.pathname.match(/^\/__bench\/api\/fixtures\/([a-z0-9-]+)$/)
+    const fixtureMatch = url.pathname.match(/^\/__steer\/api\/fixtures\/([a-z0-9-]+)$/)
     if (fixtureMatch && req.method === "GET") {
       json(res, 200, await engine.fixture(fixtureMatch[1]))
       return true
     }
 
-    const notesMatch = url.pathname.match(/^\/__bench\/api\/notes\/([a-z0-9-]+)$/)
+    const notesMatch = url.pathname.match(/^\/__steer\/api\/notes\/([a-z0-9-]+)$/)
     if (notesMatch && req.method === "GET") {
       json(res, 200, await engine.notes(notesMatch[1]))
       return true
@@ -79,7 +79,7 @@ export async function handleBenchRequest(
     }
 
     const actionMatch = url.pathname.match(
-      /^\/__bench\/api\/notes\/([a-z0-9-]+)\/(move|reply|resolve)$/
+      /^\/__steer\/api\/notes\/([a-z0-9-]+)\/(move|reply|resolve)$/
     )
     if (actionMatch && req.method === "POST") {
       const [, slug, action] = actionMatch
@@ -95,7 +95,7 @@ export async function handleBenchRequest(
       return true
     }
 
-    json(res, 404, { error: "unknown bench endpoint" })
+    json(res, 404, { error: "unknown steer endpoint" })
     return true
   } catch (err) {
     json(res, 500, { error: String(err) })

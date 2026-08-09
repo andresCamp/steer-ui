@@ -2,7 +2,7 @@
   {
     "id": "note_d7e318b4",
     "component": "button",
-    "stateUrl": "/__bench/button?children=Delete+project&variant=destructive&size=lg",
+    "stateUrl": "/__steer/button?children=Delete+project&variant=destructive&size=lg",
     "selector": "button",
     "coords": {
       "x": 0.016700059661644312,
@@ -30,7 +30,7 @@
   {
     "id": "note_35ffac93",
     "component": "button",
-    "stateUrl": "/__bench/button?children=Delete+project&variant=destructive",
+    "stateUrl": "/__steer/button?children=Delete+project&variant=destructive",
     "selector": "(canvas)",
     "coords": {
       "x": 0.8565717141429285,
@@ -50,7 +50,7 @@
   {
     "id": "note_535e7fb6",
     "component": "button",
-    "stateUrl": "/__bench/button?children=Save+changes",
+    "stateUrl": "/__steer/button?children=Save+changes",
     "selector": "(canvas)",
     "coords": {
       "x": 1.4530531085467813,
@@ -70,7 +70,7 @@
   {
     "id": "note_a04dc424",
     "component": "button",
-    "stateUrl": "/__bench/button?children=Save+changes&size=lg&variant=primary",
+    "stateUrl": "/__steer/button?children=Save+changes&size=lg&variant=primary",
     "selector": "(canvas)",
     "coords": {
       "x": 1.1055644785244287,
@@ -90,7 +90,7 @@
   {
     "id": "note_e80d1bf2",
     "component": "button",
-    "stateUrl": "/__bench/button?children=Save+changes",
+    "stateUrl": "/__steer/button?children=Save+changes",
     "selector": "(canvas)",
     "coords": {
       "x": 2.0152234460058236,
@@ -110,7 +110,7 @@
   {
     "id": "note_f3bec888",
     "component": "button",
-    "stateUrl": "/__bench/button?children=Cancel&variant=secondary",
+    "stateUrl": "/__steer/button?children=Cancel&variant=secondary",
     "selector": "button",
     "coords": {
       "x": 1.2000001538196496,
@@ -130,7 +130,7 @@
   {
     "id": "note_98bfcf6b",
     "component": "button",
-    "stateUrl": "/__bench/button?children=Delete+project&variant=destructive&size=lg",
+    "stateUrl": "/__steer/button?children=Delete+project&variant=destructive&size=lg",
     "selector": "div:nth-of-type(3) > div > p",
     "coords": {
       "x": 0.37250676165459834,
@@ -164,7 +164,7 @@
   {
     "id": "note_3c890819",
     "component": "button",
-    "stateUrl": "/__bench/button?children=Test&variant=ghost",
+    "stateUrl": "/__steer/button?children=Test&variant=ghost",
     "selector": "div:nth-of-type(4) > button",
     "coords": {
       "x": 0.5,
@@ -178,7 +178,7 @@
   {
     "id": "note_4bafa849",
     "component": "button",
-    "stateUrl": "/__bench/button?children=Test&variant=ghost",
+    "stateUrl": "/__steer/button?children=Test&variant=ghost",
     "selector": "div:nth-of-type(4) > button",
     "coords": {
       "x": 0.5,
@@ -192,7 +192,7 @@
   {
     "id": "note_fc26cafb",
     "component": "button",
-    "stateUrl": "/__bench/button?variant=ghost&children=Ghost",
+    "stateUrl": "/__steer/button?variant=ghost&children=Ghost",
     "selector": "button",
     "coords": {
       "x": 0.5,
@@ -214,7 +214,7 @@
   {
     "id": "note_6d839366",
     "component": "button",
-    "stateUrl": "/__bench/button?children=Delete+project&variant=destructive",
+    "stateUrl": "/__steer/button?children=Delete+project&variant=destructive",
     "selector": "(canvas)",
     "coords": {
       "x": 0.4609985670854214,

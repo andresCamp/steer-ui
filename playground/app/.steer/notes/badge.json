@@ -2,7 +2,7 @@
   {
     "id": "note_5dd6548a",
     "component": "badge",
-    "stateUrl": "/__bench/badge?children=Pending&tone=warning&dot=true",
+    "stateUrl": "/__steer/badge?children=Pending&tone=warning&dot=true",
     "selector": "span",
     "coords": {
       "x": 0.5161016949152543,

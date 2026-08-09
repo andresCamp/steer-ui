@@ -2,12 +2,12 @@ import { promises as fs } from "node:fs"
 import { existsSync, mkdirSync } from "node:fs"
 import path from "node:path"
 import type { FixtureStore, ManifestStore, NoteStore, SourceStore } from "../ports"
-import type { BenchManifest, BenchNote, SourceFile } from "../core/model"
+import type { SteerManifest, SteerNote, SourceFile } from "../core/model"
 
-// Filesystem adapters: the real stores behind a host's .bench/ directory
+// Filesystem adapters: the real stores behind a host's .steer/ directory
 // and source tree. Everything the pure core needs, nothing more.
 
-const BENCH_DIR = ".bench"
+const STEER_DIR = ".steer"
 
 async function listFiles(dir: string, exts: string | string[]): Promise<string[]> {
   const suffixes = Array.isArray(exts) ? exts : [exts]
@@ -59,17 +59,17 @@ export function fsSources(
 }
 
 export function fsManifest(root: string): ManifestStore {
-  const file = path.join(root, BENCH_DIR, "manifest.json")
+  const file = path.join(root, STEER_DIR, "manifest.json")
   return {
     read: async () => {
       try {
-        return JSON.parse(await fs.readFile(file, "utf8")) as BenchManifest
+        return JSON.parse(await fs.readFile(file, "utf8")) as SteerManifest
       } catch {
         return undefined
       }
     },
     write: async (manifest) => {
-      const dir = path.join(root, BENCH_DIR)
+      const dir = path.join(root, STEER_DIR)
       if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
       await fs.writeFile(file, JSON.stringify(manifest, null, 2))
     },
@@ -77,7 +77,7 @@ export function fsManifest(root: string): ManifestStore {
 }
 
 export function fsFixtures(root: string): FixtureStore {
-  const dir = path.join(root, BENCH_DIR, "fixtures")
+  const dir = path.join(root, STEER_DIR, "fixtures")
   return {
     readRaw: async (slug) => {
       try {
@@ -92,11 +92,11 @@ export function fsFixtures(root: string): FixtureStore {
 }
 
 export function fsNotes(root: string): NoteStore {
-  const dir = path.join(root, BENCH_DIR, "notes")
+  const dir = path.join(root, STEER_DIR, "notes")
   return {
     read: async (slug) => {
       try {
-        return JSON.parse(await fs.readFile(path.join(dir, `${slug}.json`), "utf8")) as BenchNote[]
+        return JSON.parse(await fs.readFile(path.join(dir, `${slug}.json`), "utf8")) as SteerNote[]
       } catch {
         return []
       }

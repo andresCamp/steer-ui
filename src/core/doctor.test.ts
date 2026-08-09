@@ -60,7 +60,7 @@ describe("doctor checks", () => {
           {
             id: "note_1",
             component: "legacy",
-            stateUrl: "/__bench/legacy?x=1",
+            stateUrl: "/__steer/legacy?x=1",
             selector: "button",
             coords: { x: 0.5, y: 0.5 },
             text: "orphaned",
@@ -85,7 +85,7 @@ describe("doctor checks", () => {
           {
             id: "note_1",
             component: "legacy",
-            stateUrl: "/__bench/legacy?x=1",
+            stateUrl: "/__steer/legacy?x=1",
             selector: "button",
             coords: { x: 0.5, y: 0.5 },
             text: "done long ago",

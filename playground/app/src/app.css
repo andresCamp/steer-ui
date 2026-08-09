@@ -1,5 +1,5 @@
 @import "tailwindcss";
-/* The bench UI lives in the lab, outside this app root; register it so
+/* The steer UI lives in the lab, outside this app root; register it so
    Tailwind's class detection scans it. */
 @source "../../../src/adapters/solid";
 

@@ -59,10 +59,10 @@ export function DemoPage() {
       <p className="mt-12 text-sm text-zinc-500">
         This is the fake product. The interesting part is the{" "}
         <Link
-          to="/__bench"
+          to="/__steer"
           className="cursor-pointer font-medium text-indigo-600 hover:text-indigo-800"
         >
-          bench
+          steer
         </Link>
         .
       </p>

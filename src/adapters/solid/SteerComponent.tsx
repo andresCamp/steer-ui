@@ -18,7 +18,7 @@ import MessageSquarePlus from "lucide-solid/icons/message-square-plus"
 import RotateCcw from "lucide-solid/icons/rotate-ccw"
 import ArrowLeft from "lucide-solid/icons/arrow-left"
 import {
-  benchAuthor,
+  steerAuthor,
   coerceProps,
   fetchFixture,
   fetchManifest,
@@ -33,9 +33,9 @@ import {
   selectorWithin,
   stateUrl,
   stringifyFixtureValues,
-  type BenchComponentSpec,
-  type BenchNote,
-  type BenchProp,
+  type SteerComponentSpec,
+  type SteerNote,
+  type SteerProp,
 } from "./data"
 
 const ZOOM_MIN = 0.25
@@ -55,7 +55,7 @@ function timeAgo(iso: string): string {
 // --- knob controls ---------------------------------------------------------
 
 function Knob(props: {
-  prop: BenchProp
+  prop: SteerProp
   value: string | undefined
   onChange: (value: string) => void
 }) {
@@ -147,7 +147,7 @@ function Knob(props: {
 
 // --- page ------------------------------------------------------------------
 
-export function BenchComponent() {
+export function SteerComponent() {
   const params = useParams<{ slug: string }>()
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -155,7 +155,7 @@ export function BenchComponent() {
   const [fixture] = createResource(() => params.slug, fetchFixture)
   const [notes, { mutate: mutateNotes }] = createResource(() => params.slug, fetchNotes)
 
-  const spec = createMemo<BenchComponentSpec | undefined>(() =>
+  const spec = createMemo<SteerComponentSpec | undefined>(() =>
     manifest()?.components.find((c) => c.slug === params.slug)
   )
 
@@ -419,14 +419,14 @@ export function BenchComponent() {
     >
   >({})
 
-  const pinCoords = (note: BenchNote) => pinOverride()[note.id]?.coords ?? note.coords
-  const pinRect = (note: BenchNote) => {
+  const pinCoords = (note: SteerNote) => pinOverride()[note.id]?.coords ?? note.coords
+  const pinRect = (note: SteerNote) => {
     const override = pinOverride()[note.id]
     return override ? override.rect : note.rect
   }
 
   /** Resize a note's region by dragging a corner; the opposite corner anchors. */
-  const onRegionResize = (note: BenchNote, cornerX: 0 | 1, cornerY: 0 | 1) => (e: PointerEvent) => {
+  const onRegionResize = (note: SteerNote, cornerX: 0 | 1, cornerY: 0 | 1) => (e: PointerEvent) => {
     e.stopPropagation()
     e.preventDefault()
     const r0 = note.rect
@@ -471,7 +471,7 @@ export function BenchComponent() {
   }
 
   /** Drag a whole note (pin and its region move together) from either handle. */
-  const onNoteDrag = (note: BenchNote) => (e: PointerEvent) => {
+  const onNoteDrag = (note: SteerNote) => (e: PointerEvent) => {
     // While composing a note, existing pins are inert: the click falls
     // through to the canvas and places the new note instead.
     if (noteMode()) return
@@ -557,7 +557,7 @@ export function BenchComponent() {
       coords: p.coords,
       rect: p.rect,
       text: noteText().trim(),
-      author: benchAuthor,
+      author: steerAuthor,
     })
     mutateNotes((prev) => [...(prev ?? []), saved])
     setPending(undefined)
@@ -574,11 +574,11 @@ export function BenchComponent() {
   }
 
   const [replyText, setReplyText] = createSignal("")
-  const submitReply = async (note: BenchNote) => {
+  const submitReply = async (note: SteerNote) => {
     const text = replyText().trim()
     if (!text) return
     setReplyText("")
-    const saved = await replyNote(params.slug, note.id, text, benchAuthor)
+    const saved = await replyNote(params.slug, note.id, text, steerAuthor)
     mutateNotes((prev) => (prev ?? []).map((n) => (n.id === note.id ? saved : n)))
   }
 
@@ -594,7 +594,7 @@ export function BenchComponent() {
   const navigate = useNavigate()
 
   /** Does a note belong to the knob state currently on screen? */
-  const noteMatchesState = (note: BenchNote) =>
+  const noteMatchesState = (note: SteerNote) =>
     sameState(knobValues(), parseStateUrl(note.stateUrl).values)
 
   // Hotkey: "c" toggles note mode (unless typing in a field).
@@ -629,7 +629,7 @@ export function BenchComponent() {
             onPointerDown={onPointerDown}
             onMouseMove={handleCanvasMouseMove}
             onMouseLeave={() => setHoverPin(undefined)}
-            data-bench-canvas
+            data-steer-canvas
             data-canvas-bg
           >
             {/* dots, visible only while navigating; grid lives in world
@@ -656,8 +656,8 @@ export function BenchComponent() {
               <div
                 class="absolute w-max -translate-x-1/2 -translate-y-1/2"
                 ref={stageRef}
-                data-bench-stage={s().slug}
-                data-bench-state={currentUrl()}
+                data-steer-stage={s().slug}
+                data-steer-state={currentUrl()}
               >
                 <Dynamic component={resolveComponent(s().name, s().target)} {...componentProps()} />
 
@@ -749,7 +749,7 @@ export function BenchComponent() {
                           top: `${pinCoords(note).y * 100}%`,
                           transform: `translate(-50%, -50%) scale(${1 / zoom()})`,
                         }}
-                        data-bench-note-id={note.id}
+                        data-steer-note-id={note.id}
                       >
                       <button
                         type="button"
@@ -838,7 +838,7 @@ export function BenchComponent() {
                               if (e.key === "Enter") submitReply(note)
                               e.stopPropagation()
                             }}
-                            data-bench-reply-input
+                            data-steer-reply-input
                           />
                         </div>
                       </Show>
@@ -864,7 +864,7 @@ export function BenchComponent() {
                         placeholder="What feels off?"
                         value={noteText()}
                         onInput={(e) => setNoteText(e.currentTarget.value)}
-                        data-bench-note-input
+                        data-steer-note-input
                       />
                       <div class="mt-2 flex items-center justify-between">
                         <span class="max-w-32 truncate font-mono text-base text-zinc-300">
@@ -882,7 +882,7 @@ export function BenchComponent() {
                             type="button"
                             class="cursor-pointer text-base font-semibold text-zinc-900 transition-colors hover:text-zinc-500"
                             onClick={submitNote}
-                            data-bench-note-save
+                            data-steer-note-save
                           >
                             pin
                           </button>
@@ -897,12 +897,12 @@ export function BenchComponent() {
             {/* breadcrumb, top left */}
             <div class="glass rise-in absolute left-5 top-5 flex h-12 items-center gap-3 rounded-full px-5">
               <A
-                href="/__bench"
+                href="/__steer"
                 class="flex cursor-pointer items-center gap-2.5 font-mono text-base text-zinc-400 transition-colors hover:text-zinc-900"
-                data-bench-back
+                data-steer-back
               >
                 <ArrowLeft size={18} stroke-width={1.75} />
-                bench
+                steer
               </A>
               <span class="text-zinc-300">/</span>
               <span class="font-mono text-base font-semibold text-zinc-900">{s().name}</span>
@@ -912,7 +912,7 @@ export function BenchComponent() {
             <div
               class="glass rise-in absolute left-5 top-1/2 flex w-12 -translate-y-1/2 flex-col items-center rounded-full py-2"
               style={{ "animation-delay": "180ms" }}
-              data-bench-zoom-rail
+              data-steer-zoom-rail
             >
               <button
                 type="button"
@@ -925,7 +925,7 @@ export function BenchComponent() {
                 class="relative h-52 w-full cursor-ns-resize touch-none"
                 ref={setTapeRef}
                 onPointerDown={onTapePointerDown}
-                data-bench-zoom-track
+                data-steer-zoom-track
               >
                 <For each={TICKS}>
                   {(v) => (
@@ -978,7 +978,7 @@ export function BenchComponent() {
                   setNoteMode(!noteMode())
                   setPending(undefined)
                 }}
-                data-bench-note-toggle
+                data-steer-note-toggle
               >
                 <MessageSquarePlus size={20} stroke-width={1.75} />
                 {noteMode() ? "Cancel" : "Add note"}
@@ -1017,7 +1017,7 @@ export function BenchComponent() {
                               ...fixtureState(name),
                             })
                           }}
-                          data-bench-fixture={name}
+                          data-steer-fixture={name}
                         >
                           {name}
                         </button>
@@ -1081,7 +1081,7 @@ export function BenchComponent() {
                   class="flex w-full cursor-pointer items-center justify-center gap-2.5 rounded-2xl bg-black/[0.04] py-3 text-base font-medium text-zinc-600 transition-colors hover:bg-black/[0.06] hover:text-zinc-900"
                   onClick={copyUrl}
                   title="Copies a URL that reopens this component with exactly these knob values"
-                  data-bench-copy-state
+                  data-steer-copy-state
                 >
                   <Show
                     when={copied()}

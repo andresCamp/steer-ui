@@ -1,20 +1,20 @@
 import { createServer, type Server } from "node:http"
 import { createEngine } from "../core/engine"
-import type { BenchEngine } from "../ports"
-import { handleBenchRequest } from "./http"
+import type { SteerEngine } from "../ports"
+import { handleSteerRequest } from "./http"
 import { fsFixtures, fsManifest, fsNotes, fsSources } from "./node-fs"
 
 // The framework-neutral driving adapter: a standalone dev API server for
 // hosts whose dev server is not Vite (Next, webpack, express, anything).
-// The host proxies /__bench/api/* here (Next `rewrites`, Vite
+// The host proxies /__steer/api/* here (Next `rewrites`, Vite
 // `server.proxy`, express `http-proxy-middleware`) and mounts the render
 // surface on its own routes. No file watcher: manifest and doctor reads
 // regenerate on request, so answers are always fresh and the adapter stays
-// dependency-free. Notes/fixtures writes land in the same .bench/ files as
+// dependency-free. Notes/fixtures writes land in the same .steer/ files as
 // every other transport.
 
-export interface BenchServerOptions {
-  /** Host project root (where .bench/ and the source tree live). */
+export interface SteerServerOptions {
+  /** Host project root (where .steer/ and the source tree live). */
   root: string
   port?: number
   componentDir?: string
@@ -22,15 +22,15 @@ export interface BenchServerOptions {
   typecheck?: boolean
 }
 
-export interface BenchServer {
-  engine: BenchEngine
+export interface SteerServer {
+  engine: SteerEngine
   server: Server
   /** Start listening; resolves with the bound port. */
   listen(): Promise<number>
   close(): Promise<void>
 }
 
-export function createBenchServer(options: BenchServerOptions): BenchServer {
+export function createSteerServer(options: SteerServerOptions): SteerServer {
   const engine = createEngine({
     sources: fsSources(options.root, { componentDir: options.componentDir }),
     manifestStore: fsManifest(options.root),
@@ -44,11 +44,11 @@ export function createBenchServer(options: BenchServerOptions): BenchServer {
   })
 
   const server = createServer(async (req, res) => {
-    const handled = await handleBenchRequest(engine, req, res, { regenerateOnRead: true })
+    const handled = await handleSteerRequest(engine, req, res, { regenerateOnRead: true })
     if (!handled) {
       res.statusCode = 404
       res.setHeader("Content-Type", "application/json")
-      res.end(JSON.stringify({ error: "bench API server: unknown path" }))
+      res.end(JSON.stringify({ error: "steer API server: unknown path" }))
     }
   })
 

@@ -1,22 +1,26 @@
-# bench
+# steer-ui
 
-Open source (MIT). An agent-first component workshop: the "Storybook for the agentic era." The thesis: Storybook's core artifact, the hand-authored story file, should not exist. Everything here is derived from source or captured as data, and every state has a URL.
+Open source (MIT). A visual interface for steering your coding agents to the last mile of UI.
 
-Built as an [onc9 primitive](SPEC.md): a pure hexagonal engine (`src/`), an offline deterministic bench (`playground/`), and an agent skill (`skills/bench/`) that installs it into host projects.
+You bring taste, the agent does the work. Every component sits in one place, every rendered state has its own URL, and the notes you pin on the canvas become data the agent reads, reproduces, fixes, and replies to. The micro-adjustments that are painful to describe in a chat box ("that padding is heavy," "this border reads too dark") become a pin at a coordinate.
+
+Nothing is hand-authored. The component catalog is derived from your TypeScript source on every change, so adding a component to the workshop costs zero files.
+
+Built as an [onc9 primitive](SPEC.md): a pure hexagonal engine (`src/`), an offline deterministic bench (`playground/`), and an agent skill (`skills/steer-ui/`) that installs it into host projects.
 
 ## The five verbs (what an agent gets)
 
-- **enumerate**: `GET /__bench/api/manifest`, regenerated from TypeScript source on every change (props from `<Name>Props` declarations, JSDoc descriptions, usage sites with `internal` tagging).
-- **render**: `/__bench/<slug>?prop=value`. Every knob configuration is addressable and shareable, including composed children (`{"$component": ...}` refs serialized in the URL, which Storybook cannot do).
-- **perceive**: Playwright against stable state URLs and `data-bench-*` attributes.
+- **enumerate**: `GET /__steer/api/manifest`, regenerated from TypeScript source on every change (props from `<Name>Props` declarations, JSDoc descriptions, usage sites with `internal` tagging).
+- **render**: `/__steer/<slug>?prop=value`. Every knob configuration is addressable and shareable, including composed children (`{"$component": ...}` refs serialized in the URL, which Storybook cannot do).
+- **perceive**: Playwright against stable state URLs and `data-steer-*` attributes.
 - **diff**: the usage scan scopes what to re-verify when a component changes.
-- **author**: fixtures (`.bench/fixtures/*.json`, named states as data) and notes (`.bench/notes/*.json`, feedback pinned to state URLs, committed to git so it travels with branches).
+- **author**: fixtures (`.steer/fixtures/*.json`, named states as data) and notes (`.steer/notes/*.json`, feedback pinned to state URLs, committed to git so it travels with branches).
 
 ## Run
 
 ```
 pnpm install
-pnpm dev        # Solid visual bench: app at :5199, bench at /__bench
+pnpm dev        # Solid visual bench: app at :5199, steer-ui at /__steer
 pnpm dev:react  # React visual bench: same thing at :5299
 pnpm playground # CLI bench: the full engine loop, offline and deterministic
 pnpm test       # invariant-pinned tests
@@ -32,21 +36,21 @@ src/ports       the contract; SourceStore+ManifestStore required, rest optional
 src/adapters    memory, node-fs, http (shared routes), vite + node-server
                 (driving), client (shared), solid/ + react/ (render surfaces)
 playground      CLI bench + Solid and React host apps as visual benches
-skills/bench    the agent front door: install / work / doctor / uninstall
+skills/steer-ui the agent front door: install / work / doctor / uninstall
 ```
 
-Imported or intersection prop types? Turn on `bench({ typecheck: true })` and the manifest resolves them through the TypeScript checker instead of marking them unsupported. Non-Vite dev server? `createBenchServer` runs the same API standalone; the host proxies `/__bench/api/*`.
+Imported or intersection prop types? Turn on `steer({ typecheck: true })` and the manifest resolves them through the TypeScript checker instead of marking them unsupported. Non-Vite dev server? `createSteerServer` runs the same API standalone; the host proxies `/__steer/api/*`.
 
 ## Agent protocol (notes)
 
 No special tooling: notes are JSON files plus a local HTTP API, both already agent-accessible.
 
-- Read notes: `.bench/notes/<slug>.json` (or `GET /__bench/api/notes/<slug>`). Each note has `stateUrl` (open it to reproduce), `selector`, `coords`/`rect` (stage-relative), `status`, and `replies`.
+- Read notes: `.steer/notes/<slug>.json` (or `GET /__steer/api/notes/<slug>`). Each note has `stateUrl` (open it to reproduce), `selector`, `coords`/`rect` (stage-relative), `status`, and `replies`.
 - Before and after working on a component, check its open notes. Reproduce via `stateUrl` with Playwright.
-- Reply to a note: `POST /__bench/api/notes/<slug>/reply` with `{ "id", "text", "author": "agent" }`.
-- Create a note: `POST /__bench/api/notes/<slug>` with `{ "stateUrl", "selector", "coords", "text", "author": "agent" }`.
-- Resolve only what you actually fixed: `POST /__bench/api/notes/<slug>/resolve` with `{ "id" }`, in the same change as the fix.
-- Health check everything: `GET /__bench/api/doctor`.
+- Reply to a note: `POST /__steer/api/notes/<slug>/reply` with `{ "id", "text", "author": "agent" }`.
+- Create a note: `POST /__steer/api/notes/<slug>` with `{ "stateUrl", "selector", "coords", "text", "author": "agent" }`.
+- Resolve only what you actually fixed: `POST /__steer/api/notes/<slug>/resolve` with `{ "id" }`, in the same change as the fix.
+- Health check everything: `GET /__steer/api/doctor`.
 
 Agent-authored notes and replies render with indigo accents so authorship is visible at a glance.
 

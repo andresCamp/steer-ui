@@ -2,10 +2,10 @@ import { extractComponents } from "./extract"
 import { upgradePropsChecked } from "./extract-checked"
 import {
   DEFAULT_CONFIG,
-  type BenchComponentSpec,
-  type BenchConfig,
-  type BenchManifest,
-  type BenchUsage,
+  type SteerComponentSpec,
+  type SteerConfig,
+  type SteerManifest,
+  type SteerUsage,
   type SourceFile,
 } from "./model"
 
@@ -20,21 +20,21 @@ export interface ManifestInput {
   componentFiles: SourceFile[]
   /** All files eligible for the usage scan (typically every .tsx under src/). */
   scanFiles: SourceFile[]
-  config?: Partial<BenchConfig>
+  config?: Partial<SteerConfig>
 }
 
 function scanUsages(
   scanFiles: SourceFile[],
   components: { name: string; file: string }[],
-  config: BenchConfig
-): Map<string, BenchUsage[]> {
-  const usages = new Map<string, BenchUsage[]>()
+  config: SteerConfig
+): Map<string, SteerUsage[]> {
+  const usages = new Map<string, SteerUsage[]>()
   for (const c of components) usages.set(c.name, [])
   for (const { path: rel, source } of scanFiles) {
     // Only JSX files can contain usages; .ts files ride along for the
     // checker but stay out of the scan.
     if (!rel.endsWith(".tsx")) continue
-    // The bench's own rendering machinery does not count as usage.
+    // The steer's own rendering machinery does not count as usage.
     if (config.excludeDirs.some((dir) => rel.startsWith(dir))) continue
     const internal = rel.startsWith(config.componentDir)
     const lines = source.split("\n")
@@ -56,15 +56,15 @@ function scanUsages(
   return usages
 }
 
-export function buildManifest(input: ManifestInput): BenchManifest {
+export function buildManifest(input: ManifestInput): SteerManifest {
   // Explicit ?? per field: callers pass partial configs with undefined
   // properties, and an object spread would clobber the defaults with them.
-  const config: BenchConfig = {
+  const config: SteerConfig = {
     componentDir: input.config?.componentDir ?? DEFAULT_CONFIG.componentDir,
     excludeDirs: input.config?.excludeDirs ?? DEFAULT_CONFIG.excludeDirs,
     typecheck: input.config?.typecheck ?? DEFAULT_CONFIG.typecheck,
   }
-  let specs: Omit<BenchComponentSpec, "usages">[] = []
+  let specs: Omit<SteerComponentSpec, "usages">[] = []
   const warnings: string[] = []
   for (const file of input.componentFiles) {
     for (const spec of extractComponents(file.path, file.source)) {

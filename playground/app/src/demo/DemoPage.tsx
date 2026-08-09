@@ -58,8 +58,8 @@ export function DemoPage() {
 
       <p class="mt-12 text-sm text-zinc-500">
         This is the fake product. The interesting part is the{" "}
-        <A href="/__bench" class="cursor-pointer font-medium text-indigo-600 hover:text-indigo-800">
-          bench
+        <A href="/__steer" class="cursor-pointer font-medium text-indigo-600 hover:text-indigo-800">
+          steer
         </A>
         .
       </p>

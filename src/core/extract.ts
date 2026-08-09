@@ -1,12 +1,12 @@
 import ts from "typescript"
-import type { BenchComponentSpec, BenchProp } from "./model"
+import type { SteerComponentSpec, SteerProp } from "./model"
 
 // TypeScript AST extraction: components and their prop knobs, derived from
 // source text alone. Pure — same source in, same specs out.
 
 export function classifyType(
   type: ts.TypeNode | undefined
-): Pick<BenchProp, "kind" | "options" | "numeric" | "raw"> {
+): Pick<SteerProp, "kind" | "options" | "numeric" | "raw"> {
   if (!type) return { kind: "unsupported", raw: "unknown" }
   const raw = type.getText()
   if (type.kind === ts.SyntaxKind.BooleanKeyword) return { kind: "boolean", raw }
@@ -48,8 +48,8 @@ function hasExportModifier(node: ts.Node): boolean {
   return !!modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword)
 }
 
-function extractProps(members: ts.NodeArray<ts.TypeElement> | undefined): BenchProp[] {
-  const props: BenchProp[] = []
+function extractProps(members: ts.NodeArray<ts.TypeElement> | undefined): SteerProp[] {
+  const props: SteerProp[] = []
   if (!members) return props
   for (const member of members) {
     if (!ts.isPropertySignature(member) || !member.name) continue
@@ -84,7 +84,7 @@ function extractProps(members: ts.NodeArray<ts.TypeElement> | undefined): BenchP
 export function extractComponents(
   filePath: string,
   source: string
-): Omit<BenchComponentSpec, "usages">[] {
+): Omit<SteerComponentSpec, "usages">[] {
   const sf = ts.createSourceFile(filePath, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
 
   const propsByName = new Map<string, ts.NodeArray<ts.TypeElement>>()
@@ -180,7 +180,7 @@ export function extractComponents(
   }
   visit(sf)
 
-  const components: Omit<BenchComponentSpec, "usages">[] = []
+  const components: Omit<SteerComponentSpec, "usages">[] = []
   // Compound targets are absorbed into their dotted entry rather than
   // listed twice (CardActions exists in the manifest only as Card.Actions).
   const compoundTargets = new Set(

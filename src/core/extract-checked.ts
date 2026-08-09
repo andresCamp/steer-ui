@@ -1,5 +1,5 @@
 import ts from "typescript"
-import type { BenchComponentSpec, BenchProp, SourceFile } from "./model"
+import type { SteerComponentSpec, SteerProp, SourceFile } from "./model"
 
 // Checked extraction: upgrades prop classification with the TypeScript type
 // checker so imported, aliased, and intersection Props types produce real
@@ -45,7 +45,7 @@ function createVirtualProgram(files: SourceFile[]): ts.Program {
 function classifyCheckedType(
   checker: ts.TypeChecker,
   type: ts.Type
-): Pick<BenchProp, "kind" | "options" | "numeric" | "raw"> {
+): Pick<SteerProp, "kind" | "options" | "numeric" | "raw"> {
   const raw = checker.typeToString(type)
   if (type.flags & ts.TypeFlags.BooleanLike) return { kind: "boolean", raw }
   if (type.flags & ts.TypeFlags.StringLiteral) {
@@ -76,8 +76,8 @@ function classifyCheckedType(
   return { kind: "unsupported", raw }
 }
 
-function propsFromType(checker: ts.TypeChecker, type: ts.Type): BenchProp[] {
-  const props: BenchProp[] = []
+function propsFromType(checker: ts.TypeChecker, type: ts.Type): SteerProp[] {
+  const props: SteerProp[] = []
   for (const symbol of checker.getPropertiesOfType(type)) {
     const name = symbol.getName()
     const declaration = symbol.valueDeclaration ?? symbol.declarations?.[0]
@@ -141,7 +141,7 @@ function resolveNamedType(
  * type the checker cannot resolve keep their syntactic props (invariant 4:
  * degrade, never fail the manifest).
  */
-export function upgradePropsChecked<S extends Omit<BenchComponentSpec, "usages">>(
+export function upgradePropsChecked<S extends Omit<SteerComponentSpec, "usages">>(
   specs: S[],
   files: SourceFile[]
 ): S[] {

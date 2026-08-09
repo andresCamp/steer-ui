@@ -13,16 +13,16 @@ const PAGE = {
   path: "src/demo/Page.tsx",
   source: `export function Page() { return <div><Button /><Card.Actions /></div> }`,
 }
-const BENCH_UI = {
-  path: "src/bench/BenchIndex.tsx",
-  source: `export function BenchIndex() { return <Button /> }`,
+const STEER_UI = {
+  path: "src/steer/SteerIndex.tsx",
+  source: `export function SteerIndex() { return <Button /> }`,
 }
 
 const input = (over: Partial<ManifestInput> = {}): ManifestInput => ({
   root: "/host",
   generatedAt: "2026-01-01T00:00:00.000Z",
   componentFiles: [BUTTON, CARD],
-  scanFiles: [BUTTON, CARD, PAGE, BENCH_UI],
+  scanFiles: [BUTTON, CARD, PAGE, STEER_UI],
   ...over,
 })
 
@@ -33,7 +33,7 @@ describe("buildManifest", () => {
     expect(a).toBe(b)
   })
 
-  it("scans usages, tags intra-library ones internal, skips self and bench dirs", () => {
+  it("scans usages, tags intra-library ones internal, skips self and steer dirs", () => {
     const manifest = buildManifest(input())
     const button = manifest.components.find((c) => c.name === "Button")!
     expect(button.usages).toEqual([
@@ -95,7 +95,7 @@ describe("buildManifest", () => {
       input({ config: { componentDir: undefined, excludeDirs: undefined } })
     )
     const button = manifest.components.find((c) => c.name === "Button")!
-    expect(button.usages.some((u) => u.file.startsWith("src/bench"))).toBe(false)
+    expect(button.usages.some((u) => u.file.startsWith("src/steer"))).toBe(false)
   })
 
   it("sorts components by name for stable output", () => {

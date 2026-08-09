@@ -11,14 +11,14 @@ import {
   stateKey,
   stateUrl,
   stringifyFixtureValues,
-  type BenchComponentSpec,
+  type SteerComponentSpec,
 } from "./data"
 
 /**
  * The library as a type-specimen sheet: components rendered live on the
  * page, one section per component, states flowing inline. No cards.
  */
-function Specimen(props: { spec: BenchComponentSpec; index: number }) {
+function Specimen(props: { spec: SteerComponentSpec; index: number }) {
   const navigate = useNavigate()
   const [fixture] = createResource(() => props.spec.slug, fetchFixture)
   const [notes] = createResource(() => props.spec.slug, fetchNotes)
@@ -52,11 +52,11 @@ function Specimen(props: { spec: BenchComponentSpec; index: number }) {
     <section
       class="rise-in grid grid-cols-[10rem_1fr] gap-8 border-t border-black/[0.05] py-14"
       style={{ "animation-delay": `${80 + props.index * 60}ms` }}
-      data-bench-specimen={props.spec.slug}
+      data-steer-specimen={props.spec.slug}
     >
       <div class="pt-1">
         <A
-          href={`/__bench/${props.spec.slug}`}
+          href={`/__steer/${props.spec.slug}`}
           class="cursor-pointer font-mono text-[17px] font-medium text-zinc-900 transition-colors hover:text-zinc-500"
         >
           {props.spec.name}
@@ -80,7 +80,7 @@ function Specimen(props: { spec: BenchComponentSpec; index: number }) {
             <div
               class="group relative cursor-pointer rounded-2xl p-6 transition-colors duration-200 hover:bg-black/[0.03]"
               onClick={() => navigate(stateUrl(props.spec.slug, valuesFor(state)))}
-              data-bench-state-preview={state}
+              data-steer-state-preview={state}
             >
               <span class="pointer-events-none inline-block">
                 <Show when={resolveComponent(props.spec.name, props.spec.target)}>
@@ -98,7 +98,7 @@ function Specimen(props: { spec: BenchComponentSpec; index: number }) {
                 <span
                   class="pointer-events-none absolute right-2 top-2 flex size-5 items-center justify-center rounded-full bg-amber-400 font-mono text-[13px] font-semibold text-white shadow-[0_1px_6px_rgba(217,119,6,0.4)]"
                   title={`${notesForState(state)} open note${notesForState(state) === 1 ? "" : "s"}`}
-                  data-bench-state-notes={state}
+                  data-steer-state-notes={state}
                 >
                   {notesForState(state)}
                 </span>
@@ -111,13 +111,13 @@ function Specimen(props: { spec: BenchComponentSpec; index: number }) {
   )
 }
 
-export function BenchIndex() {
+export function SteerIndex() {
   const [manifest] = createResource(fetchManifest)
 
   return (
     <div class="mx-auto max-w-5xl px-10 pb-24 pt-16">
       <header class="rise-in mb-16 flex items-baseline justify-between">
-        <h1 class="font-mono text-[17px] font-semibold tracking-tight">bench</h1>
+        <h1 class="font-mono text-[17px] font-semibold tracking-tight">steer</h1>
         <A href="/" class="cursor-pointer text-base text-zinc-400 transition-colors hover:text-zinc-900">
           app
         </A>

@@ -1,4 +1,4 @@
-// Shared design tokens as types. Imported by components so the bench's
+// Shared design tokens as types. Imported by components so the steer's
 // checked extraction (typecheck: true) has something real to resolve.
 
 export type Tone = "info" | "success" | "danger"

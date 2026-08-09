@@ -42,7 +42,7 @@ describe("engine (the driving port)", () => {
   it("runs the full note lifecycle deterministically", async () => {
     const { engine, notes } = wire()
     const note = (await engine.addNote("button", {
-      stateUrl: "/__bench/button?variant=b",
+      stateUrl: "/__steer/button?variant=b",
       selector: "button",
       coords: { x: 0.5, y: 0.5 },
       text: "too loud",

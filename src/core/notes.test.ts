@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import type { BenchNote } from "./model"
+import type { SteerNote } from "./model"
 import { createNote, moveNoteById, replyToNoteById, resolveNoteById, type NoteContext } from "./notes"
 
 const ctx = (): NoteContext => {
@@ -8,12 +8,12 @@ const ctx = (): NoteContext => {
   return { now: () => `2026-01-01T00:00:0${clock++}.000Z`, id: (p) => `${p}_${++ids}` }
 }
 
-const seed = (): BenchNote[] => {
+const seed = (): SteerNote[] => {
   const { notes } = createNote(
     [],
     "button",
     {
-      stateUrl: "/__bench/button?variant=ghost",
+      stateUrl: "/__steer/button?variant=ghost",
       selector: "button",
       coords: { x: 0.5, y: 0.5 },
       rect: { x: 0.1, y: 0.1, w: 0.4, h: 0.2 },

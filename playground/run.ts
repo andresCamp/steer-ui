@@ -1,6 +1,6 @@
 import { createEngine } from "../src/core/engine"
 import { parseStateUrl, stateUrl, stringifyFixtureValues } from "../src/core/state-url"
-import type { BenchFixture } from "../src/core/model"
+import type { SteerFixture } from "../src/core/model"
 import {
   fixedClock,
   memoryFixtures,
@@ -81,7 +81,7 @@ for (const p of checkedAlert?.props ?? []) {
 // --- 2. address --------------------------------------------------------------
 
 heading("state URLs: every state addressable, composition included")
-const cardFixture: BenchFixture = JSON.parse(fixtureRaw["card"])
+const cardFixture: SteerFixture = JSON.parse(fixtureRaw["card"])
 for (const [name, values] of Object.entries(cardFixture.states)) {
   const url = stateUrl("card", stringifyFixtureValues(values))
   console.log(`  ${name.padEnd(12)} ${url}`)
@@ -98,7 +98,7 @@ console.log(
 
 heading("notes: feedback as data, the agent loop")
 const note = (await engine.addNote("button", {
-  stateUrl: "/__bench/button?children=Delete+project&variant=destructive&size=lg",
+  stateUrl: "/__steer/button?children=Delete+project&variant=destructive&size=lg",
   selector: "button",
   coords: { x: 0.31, y: 0.42 },
   text: "feels too wide at lg, tighten padding",
@@ -119,7 +119,7 @@ console.log(`  agent resolves with the fix -> status: ${resolved.status} (note p
 
 heading("failure beats: degrade visibly, never crash")
 const orphan = (await engine.addNote("legacy-widget", {
-  stateUrl: "/__bench/legacy-widget?tone=warm",
+  stateUrl: "/__steer/legacy-widget?tone=warm",
   selector: "(canvas)",
   coords: { x: 0.5, y: 0.5 },
   text: "note against a component that no longer exists",

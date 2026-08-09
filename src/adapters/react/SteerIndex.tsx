@@ -10,10 +10,10 @@ import {
   stateKey,
   stateUrl,
   stringifyFixtureValues,
-  type BenchComponentSpec,
-  type BenchFixture,
-  type BenchManifest,
-  type BenchNote,
+  type SteerComponentSpec,
+  type SteerFixture,
+  type SteerManifest,
+  type SteerNote,
 } from "./data"
 
 /**
@@ -21,10 +21,10 @@ import {
  * page, one section per component, states flowing inline. No cards.
  * React port of the Solid reference surface; keep the two in lockstep.
  */
-function Specimen({ spec, index }: { spec: BenchComponentSpec; index: number }) {
+function Specimen({ spec, index }: { spec: SteerComponentSpec; index: number }) {
   const navigate = useNavigate()
-  const [fixture, setFixture] = useState<BenchFixture>()
-  const [notes, setNotes] = useState<BenchNote[]>([])
+  const [fixture, setFixture] = useState<SteerFixture>()
+  const [notes, setNotes] = useState<SteerNote[]>([])
 
   useEffect(() => {
     let ignore = false
@@ -54,11 +54,11 @@ function Specimen({ spec, index }: { spec: BenchComponentSpec; index: number }) 
     <section
       className="rise-in grid grid-cols-[10rem_1fr] gap-8 border-t border-black/[0.05] py-14"
       style={{ animationDelay: `${80 + index * 60}ms` }}
-      data-bench-specimen={spec.slug}
+      data-steer-specimen={spec.slug}
     >
       <div className="pt-1">
         <Link
-          to={`/__bench/${spec.slug}`}
+          to={`/__steer/${spec.slug}`}
           className="cursor-pointer font-mono text-[17px] font-medium text-zinc-900 transition-colors hover:text-zinc-500"
         >
           {spec.name}
@@ -82,7 +82,7 @@ function Specimen({ spec, index }: { spec: BenchComponentSpec; index: number }) 
               key={state}
               className="group relative cursor-pointer rounded-2xl p-6 transition-colors duration-200 hover:bg-black/[0.03]"
               onClick={() => navigate(stateUrl(spec.slug, valuesFor(state)))}
-              data-bench-state-preview={state}
+              data-steer-state-preview={state}
             >
               <span className="pointer-events-none inline-block">
                 {component && createElement(component, coerceProps(spec, valuesFor(state)))}
@@ -94,7 +94,7 @@ function Specimen({ spec, index }: { spec: BenchComponentSpec; index: number }) 
                 <span
                   className="pointer-events-none absolute right-2 top-2 flex size-5 items-center justify-center rounded-full bg-amber-400 font-mono text-[13px] font-semibold text-white shadow-[0_1px_6px_rgba(217,119,6,0.4)]"
                   title={`${notesForState(state)} open note${notesForState(state) === 1 ? "" : "s"}`}
-                  data-bench-state-notes={state}
+                  data-steer-state-notes={state}
                 >
                   {notesForState(state)}
                 </span>
@@ -107,8 +107,8 @@ function Specimen({ spec, index }: { spec: BenchComponentSpec; index: number }) 
   )
 }
 
-export function BenchIndex() {
-  const [manifest, setManifest] = useState<BenchManifest>()
+export function SteerIndex() {
+  const [manifest, setManifest] = useState<SteerManifest>()
 
   useEffect(() => {
     let ignore = false
@@ -121,7 +121,7 @@ export function BenchIndex() {
   return (
     <div className="mx-auto max-w-5xl px-10 pb-24 pt-16">
       <header className="rise-in mb-16 flex items-baseline justify-between">
-        <h1 className="font-mono text-[17px] font-semibold tracking-tight">bench</h1>
+        <h1 className="font-mono text-[17px] font-semibold tracking-tight">steer</h1>
         <Link
           to="/"
           className="cursor-pointer text-base text-zinc-400 transition-colors hover:text-zinc-900"

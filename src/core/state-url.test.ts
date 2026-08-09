@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import type { BenchComponentSpec } from "./model"
+import type { SteerComponentSpec } from "./model"
 import {
   coerceProps,
   parseStateUrl,
@@ -9,7 +9,7 @@ import {
   stringifyFixtureValues,
 } from "./state-url"
 
-const spec: BenchComponentSpec = {
+const spec: SteerComponentSpec = {
   name: "Button",
   slug: "button",
   file: "src/components/Button.tsx",
@@ -29,7 +29,7 @@ describe("state URL grammar (invariant 2)", () => {
   it("round-trips every knob configuration through the URL", () => {
     const values = { variant: "b", disabled: "true", count: "3", label: "hi there" }
     const url = stateUrl("button", values)
-    expect(url).toMatch(/^\/__bench\/button\?/)
+    expect(url).toMatch(/^\/__steer\/button\?/)
     const parsed = parseStateUrl(url)
     expect(parsed.slug).toBe("button")
     expect(parsed.values).toEqual(values)
@@ -48,7 +48,7 @@ describe("state URL grammar (invariant 2)", () => {
   })
 
   it("drops empty values so URLs stay canonical", () => {
-    expect(stateUrl("button", { variant: "", label: "x" })).toBe("/__bench/button?label=x")
+    expect(stateUrl("button", { variant: "", label: "x" })).toBe("/__steer/button?label=x")
   })
 
   it("coerces per the manifest: booleans, numbers, numeric enums", () => {

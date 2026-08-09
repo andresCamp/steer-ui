@@ -1,7 +1,7 @@
 import type {
-  BenchFixture,
-  BenchManifest,
-  BenchNote,
+  SteerFixture,
+  SteerManifest,
+  SteerNote,
   DoctorCheck,
   DoctorReport,
 } from "./model"
@@ -9,30 +9,30 @@ import { parseStateUrl } from "./state-url"
 
 // Doctor: deterministic health checks over the engine's artifacts. Pure —
 // the caller gathers state (stored manifest, a fresh rebuild, raw fixture
-// text, notes) and this module judges it. "fail" means the bench lies or
+// text, notes) and this module judges it. "fail" means the steer lies or
 // cannot answer; "warn" means it works but something will confuse an agent.
 
 export interface DoctorInput {
-  stored: BenchManifest | undefined
+  stored: SteerManifest | undefined
   /** Freshly derived from current sources by the caller. */
-  rebuilt: BenchManifest
+  rebuilt: SteerManifest
   /** slug -> raw fixture file text */
   fixtures: Record<string, string>
   /** slug -> notes */
-  notes: Record<string, BenchNote[]>
+  notes: Record<string, SteerNote[]>
 }
 
 /** Manifest equality that ignores the generation timestamp. */
-function sameManifest(a: BenchManifest, b: BenchManifest): boolean {
-  const strip = ({ generatedAt: _ignored, ...rest }: BenchManifest) => rest
+function sameManifest(a: SteerManifest, b: SteerManifest): boolean {
+  const strip = ({ generatedAt: _ignored, ...rest }: SteerManifest) => rest
   return JSON.stringify(strip(a)) === JSON.stringify(strip(b))
 }
 
-function parseFixture(raw: string): BenchFixture | undefined {
+function parseFixture(raw: string): SteerFixture | undefined {
   try {
     const parsed = JSON.parse(raw)
     if (parsed && typeof parsed === "object" && typeof parsed.states === "object") {
-      return parsed as BenchFixture
+      return parsed as SteerFixture
     }
   } catch {
     // fall through: caller reports the parse failure
@@ -49,7 +49,7 @@ export function runDoctor(input: DoctorInput): DoctorReport {
     checks.push({
       id: "manifest-present",
       status: "fail",
-      detail: "no manifest stored; the bench cannot answer until one is generated",
+      detail: "no manifest stored; the steer cannot answer until one is generated",
     })
   } else if (!sameManifest(input.stored, input.rebuilt)) {
     checks.push({
