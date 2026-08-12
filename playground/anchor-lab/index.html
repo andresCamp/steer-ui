@@ -3,44 +3,35 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>steer-ui · anchor lab</title>
-    <link rel="stylesheet" href="/src/lab.css" />
+    <title>steer-ui · page notes</title>
+    <link rel="stylesheet" href="/src/demo.css" />
   </head>
   <body>
-    <header class="lab-hdr">
-      <h1>anchor lab</h1>
-      <p>
-        Does a page note find its element again after the page changes? Eight notes, twenty-three
-        mutations, seven strategies. <b>Wrong</b> is worse than
-        <b>orphaned</b>: a silently misplaced note beats no note only in appearance.
-      </p>
-    </header>
+    <div class="bar">
+      <div class="bar-l">
+        <span class="tag">layered v2</span>
+        <button id="add" class="btn">Add note&nbsp; (c)</button>
+        <button id="shuffle" class="btn ghost">Shuffle the app</button>
+        <button id="reset" class="btn ghost">Reset</button>
+        <label class="tog"><input type="checkbox" id="showtext" checked /> show text</label>
+      </div>
+      <div class="bar-r">
+        <span id="stat" class="stat"></span>
+        <span id="dims" class="dims"></span>
+        <a class="link" href="/matrix.html">matrix →</a>
+      </div>
+    </div>
 
-    <main class="lab">
-      <section class="col stage-col">
-        <div class="bar">
-          <label>scenario <select id="scenario"></select></label>
-          <label>strategy <select id="strategy"></select></label>
-        </div>
-        <div class="legend">
-          <span><i class="pin ok"></i> correct</span>
-          <span><i class="pin bad">✕</i> wrong element</span>
-          <span><i class="pin orphan">?</i> orphaned</span>
-          <span><i class="pin ghost"></i> stored absolute point</span>
-        </div>
-        <div class="stage">
-          <div id="specimen" class="specimen"></div>
-          <div id="pins" class="pins"></div>
-        </div>
-      </section>
+    <p class="hint">
+      Drag the window edge with your mouse. The dashboard reflows and the notes stay on the
+      thing they were about. <b>Shuffle</b> changes the data, the layout and the source line
+      numbers underneath them at once.
+    </p>
 
-      <section class="col">
-        <button id="run" class="run">Run all scenarios</button>
-        <div id="summary"></div>
-        <div id="matrix"><p class="muted">Not run yet.</p></div>
-      </section>
-    </main>
+    <div id="app" class="app"></div>
+    <ol id="rail" class="rail"></ol>
+    <div id="layer" class="layer"></div>
 
-    <script type="module" src="/src/main.ts"></script>
+    <script type="module" src="/src/demo.ts"></script>
   </body>
 </html>

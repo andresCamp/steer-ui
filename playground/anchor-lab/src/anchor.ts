@@ -21,6 +21,11 @@ export interface Anchor {
   source?: SourceLoc
   /** Index among elements sharing that exact loc (one source line, N rows). */
   occurrence: number
+  /** How many elements shared that loc at capture time. If the count has
+   *  changed, the set changed, and `occurrence` can no longer be trusted. */
+  siblingCount: number
+  /** Position within the parent's children. Structure, not content. */
+  childIndex: number
   /** #id or [data-testid] when the element carries one. */
   stableSelector?: string
   /** Structural nth-of-type path from the root. */
@@ -78,6 +83,11 @@ function locString(loc: SourceLoc): string {
   return `${loc.file}:${loc.line}:${loc.col}`
 }
 
+export function childIndexOf(el: Element): number {
+  const p = el.parentElement
+  return p ? Array.from(p.children).indexOf(el) : -1
+}
+
 export function fingerprintOf(el: Element): string {
   const kids = Array.from(el.children)
     .map((c) => c.tagName.toLowerCase())
@@ -113,14 +123,18 @@ export function captureAnchor(el: Element, clientX: number, clientY: number, roo
   const raw = el.getAttribute("data-steer-loc")
   const source = parseLoc(raw)
   let occurrence = 0
+  let siblingCount = 1
   if (raw) {
     const sharing = Array.from(root.querySelectorAll(`[data-steer-loc="${CSS.escape(raw)}"]`))
     occurrence = Math.max(0, sharing.indexOf(el))
+    siblingCount = sharing.length
   }
   const r = el.getBoundingClientRect()
   return {
     source,
     occurrence,
+    siblingCount,
+    childIndex: childIndexOf(el),
     stableSelector: stableSelectorOf(el),
     path: cssPath(el, root),
     tag: el.tagName.toLowerCase(),
@@ -302,6 +316,44 @@ function domFallback(a: Anchor, root: Element): Element | null {
   return similarity(collapse(p.textContent ?? ""), a.text) >= TEXT_FLOOR ? p : null
 }
 
+/**
+ * Content is the wrong signal for an element that holds live data: a KPI whose
+ * value goes from $412,880 to $438,110 is the same element, not a new one, and
+ * a dashboard is mostly such elements. So when content evidence fails, fall
+ * back to pure structure.
+ *
+ * The guard is `siblingCount`. Occurrence is only meaningful while the set it
+ * indexes into is intact; if a row was added or a card deleted, the count has
+ * moved and this tier declines rather than guessing. Uniqueness is required
+ * too: exactly one group in the file may match on size, tag and child index.
+ */
+function byStructure(a: Anchor, root: Element): Element | null {
+  if (!a.source || a.siblingCount < 1) return null
+  const wantBase = basename(a.source.file)
+  const groups = new Map<string, Element[]>()
+
+  for (const el of Array.from(root.querySelectorAll("[data-steer-loc]"))) {
+    const loc = parseLoc(el.getAttribute("data-steer-loc"))
+    if (!loc) continue
+    if (loc.file !== a.source.file && basename(loc.file) !== wantBase) continue
+    const k = locString(loc)
+    const g = groups.get(k)
+    if (g) g.push(el)
+    else groups.set(k, [el])
+  }
+
+  const viable: Element[] = []
+  for (const g of groups.values()) {
+    if (g.length !== a.siblingCount) continue
+    const cand = g[a.occurrence]
+    if (!cand) continue
+    if (cand.tagName.toLowerCase() !== a.tag) continue
+    if (childIndexOf(cand) !== a.childIndex) continue
+    viable.push(cand)
+  }
+  return viable.length === 1 ? viable[0] : null
+}
+
 export const layeredV2: Strategy = (a, root) => {
   if (!a.source) return domFallback(a, root)
   const want = a.source
@@ -347,17 +399,17 @@ export const layeredV2: Strategy = (a, root) => {
     cands.push({ el, textSim, ctxSim, score, sameTag })
   }
 
-  if (!cands.length) return domFallback(a, root)
+  if (!cands.length) return byStructure(a, root) ?? domFallback(a, root)
   cands.sort((x, y) => y.score - x.score)
   const win = cands[0]
 
   // Gate 1: the element has to still say roughly what it said.
-  if (win.textSim < TEXT_FLOOR) return null
+  if (win.textSim < TEXT_FLOOR) return byStructure(a, root)
   // Gate 2: when several candidates say the same thing, the surroundings have
   // to agree too. This is what turns a deleted element into an honest orphan
   // instead of its nearest lookalike.
   const ambiguous = cands.filter((c) => c.textSim >= 0.95 && c.sameTag).length > 1
-  if (ambiguous && win.ctxSim < CONTEXT_FLOOR) return null
+  if (ambiguous && win.ctxSim < CONTEXT_FLOOR) return byStructure(a, root)
 
   return win.el
 }
