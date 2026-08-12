@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>steer-ui · anchor lab</title>
+    <link rel="stylesheet" href="/src/lab.css" />
+  </head>
+  <body>
+    <header class="lab-hdr">
+      <h1>anchor lab</h1>
+      <p>
+        Does a page note find its element again after the page changes? Eight notes, twenty-three
+        mutations, seven strategies. <b>Wrong</b> is worse than
+        <b>orphaned</b>: a silently misplaced note beats no note only in appearance.
+      </p>
+    </header>
+
+    <main class="lab">
+      <section class="col stage-col">
+        <div class="bar">
+          <label>scenario <select id="scenario"></select></label>
+          <label>strategy <select id="strategy"></select></label>
+        </div>
+        <div class="legend">
+          <span><i class="pin ok"></i> correct</span>
+          <span><i class="pin bad">✕</i> wrong element</span>
+          <span><i class="pin orphan">?</i> orphaned</span>
+          <span><i class="pin ghost"></i> stored absolute point</span>
+        </div>
+        <div class="stage">
+          <div id="specimen" class="specimen"></div>
+          <div id="pins" class="pins"></div>
+        </div>
+      </section>
+
+      <section class="col">
+        <button id="run" class="run">Run all scenarios</button>
+        <div id="summary"></div>
+        <div id="matrix"><p class="muted">Not run yet.</p></div>
+      </section>
+    </main>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
