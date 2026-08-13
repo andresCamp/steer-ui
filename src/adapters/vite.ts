@@ -5,6 +5,7 @@ import { createEngine } from "../core/engine"
 import type { SteerEngine } from "../ports"
 import { handleSteerRequest } from "./http"
 import { fsFixtures, fsManifest, fsNotes, fsSources } from "./node-fs"
+import { stampComponents } from "./stamp"
 
 // Dev-only driving adapter. `apply: "serve"` is the production guarantee:
 // Vite never loads this plugin during `vite build`. The host app must not
@@ -54,6 +55,8 @@ export function steer(options: SteerPluginOptions = {}): Plugin {
   return {
     name: "steer",
     apply: "serve",
+    // Stamp JSX before the framework compiler turns it into createComponent.
+    enforce: "pre",
 
     configResolved(config) {
       root = config.root
@@ -79,6 +82,24 @@ export function steer(options: SteerPluginOptions = {}): Plugin {
 
     handleHotUpdate(ctx) {
       if (ctx.file.includes(`${path.sep}${STEER_DIR}${path.sep}`)) return []
+    },
+
+    transform: {
+      order: "pre",
+      handler(code, id) {
+        const file = id.split("?")[0] ?? id
+        if (!file.endsWith(".tsx") || file.includes("node_modules")) return
+        if (file.includes(`${path.sep}adapters${path.sep}`)) return
+        try {
+          return engine.manifest().then((manifest) => {
+            const names = new Set((manifest?.components ?? []).map((c) => c.name))
+            const stamped = stampComponents(code, file, names.size ? names : undefined)
+            if (stamped) return { code: stamped, map: null }
+          })
+        } catch (err) {
+          console.error("[steer] stamp failed", file, err)
+        }
+      },
     },
 
     resolveId(id) {

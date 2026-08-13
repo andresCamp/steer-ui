@@ -3,6 +3,7 @@ import { render } from "solid-js/web"
 import { fetchNotes, postNote, replyNote, resolveNote, selectorWithin } from "../client"
 import type { SteerNote } from "../../core/model"
 import { parseStateUrl } from "../../core/state-url"
+import { STEER_COMPONENT_ATTR, STEER_PROPS_ATTR, slugFromComponentName } from "../stamp-attr"
 import { Peek } from "./chrome/Peek"
 import { Pin } from "./chrome/Pin"
 import { GhostPin } from "./chrome/GhostPin"
@@ -28,9 +29,39 @@ function isOverlay(el: EventTarget | null): boolean {
   return el instanceof Node && !!document.getElementById("steer-overlay")?.contains(el)
 }
 
+function hostOf(el: HTMLElement): { slug: string; props: Record<string, string>; el: HTMLElement } | undefined {
+  const host = el.closest(`[${STEER_COMPONENT_ATTR}]`)
+  if (!(host instanceof HTMLElement)) return
+  const name = host.getAttribute(STEER_COMPONENT_ATTR)
+  if (!name) return
+  let props: Record<string, string> = {}
+  const raw = host.getAttribute(STEER_PROPS_ATTR)
+  if (raw) {
+    try {
+      props = JSON.parse(raw) as Record<string, string>
+    } catch {
+      /* ignore malformed stamps */
+    }
+  }
+  return { slug: slugFromComponentName(name), props, el: host }
+}
+
+async function loadLiveNotes(): Promise<SteerNote[]> {
+  const names = [
+    ...new Set(
+      [...document.querySelectorAll(`[${STEER_COMPONENT_ATTR}]`)].map(
+        (n) => n.getAttribute(STEER_COMPONENT_ATTR) ?? "",
+      ),
+    ),
+  ].filter(Boolean)
+  const slugs = [...new Set([routeSlug(location.pathname), ...names.map(slugFromComponentName)])]
+  const batches = await Promise.all(slugs.map((s) => fetchNotes(s)))
+  return batches.flat()
+}
+
 function OverlayApp() {
-  const slug = () => routeSlug(location.pathname)
-  const [notes, { mutate }] = createResource(slug, fetchNotes)
+  const pageSlug = () => routeSlug(location.pathname)
+  const [notes, { mutate }] = createResource(loadLiveNotes)
   const [open, setOpen] = createSignal(false)
   const [noteMode, setNoteMode] = createSignal(false)
   const [pinsVisible, setPinsVisible] = createSignal(false)
@@ -41,6 +72,8 @@ function OverlayApp() {
         selector: string
         coords: { x: number; y: number }
         client: { x: number; y: number }
+        dest: string
+        stateUrl: string
       }
     | undefined
   >()
@@ -50,7 +83,8 @@ function OverlayApp() {
 
   const band = () => bandOf(width()).id
   const openNotes = () => (notes() ?? []).filter((n) => n.status === "open")
-  const noteMatches = (n: SteerNote) => parseStateUrl(n.stateUrl).values.band === band()
+  const noteMatches = (n: SteerNote) =>
+    n.stateUrl.startsWith("/__steer/") || parseStateUrl(n.stateUrl).values.band === band()
   const here = () => openNotes().filter(noteMatches).length
   const away = () => openNotes().length - here()
 
@@ -67,7 +101,14 @@ function OverlayApp() {
   }
 
   const pinAt = (n: SteerNote) => {
-    const el = n.selector ? document.querySelector(n.selector) : null
+    let el: Element | null = null
+    if (n.selector && !n.selector.startsWith("(")) {
+      try {
+        el = document.querySelector(n.selector)
+      } catch {
+        el = null
+      }
+    }
     if (el) {
       const box = el.getBoundingClientRect()
       return {
@@ -117,16 +158,23 @@ function OverlayApp() {
     e.preventDefault()
     e.stopPropagation()
     const hit = document.elementFromPoint(e.clientX, e.clientY)
-    const el =
-      hit instanceof HTMLElement && !isOverlay(hit) ? hit : document.body
-    const box = el.getBoundingClientRect()
+    const el = hit instanceof HTMLElement && !isOverlay(hit) ? hit : document.body
+    const host = hostOf(el)
+    const target = host?.el ?? el
+    const box = target.getBoundingClientRect()
+    const dest = host?.slug ?? pageSlug()
+    const stateUrl = host
+      ? `/__steer/${host.slug}${Object.keys(host.props).length ? `?${new URLSearchParams(host.props)}` : ""}`
+      : `${location.pathname}?band=${band()}`
     setPending({
-      selector: selectorWithin(document.documentElement, el),
+      selector: selectorWithin(document.documentElement, target),
       coords: {
         x: box.width ? (e.clientX - box.left) / box.width : 0.5,
         y: box.height ? (e.clientY - box.top) / box.height : 0.5,
       },
       client: { x: e.clientX, y: e.clientY },
+      dest,
+      stateUrl,
     })
     setDraft("")
     setNoteMode(false)
@@ -138,8 +186,8 @@ function OverlayApp() {
     const p = pending()
     const text = draft().trim()
     if (!p || !text) return
-    const saved = await postNote(slug(), {
-      stateUrl: `${location.pathname}?band=${band()}`,
+    const saved = await postNote(p.dest, {
+      stateUrl: p.stateUrl,
       selector: p.selector,
       coords: p.coords,
       text,
@@ -206,14 +254,14 @@ function OverlayApp() {
                         mutate((prev) =>
                           (prev ?? []).map((x) => (x.id === n.id ? { ...x, status: "resolved" as const } : x)),
                         )
-                        await resolveNote(slug(), n.id)
+                        await resolveNote(n.component || pageSlug(), n.id)
                       }}
                       onReplyInput={setReply}
                       onReply={async () => {
                         const text = reply().trim()
                         if (!text) return
                         setReply("")
-                        const saved = await replyNote(slug(), n.id, text, AUTHOR)
+                        const saved = await replyNote(n.component || pageSlug(), n.id, text, AUTHOR)
                         mutate((prev) => (prev ?? []).map((x) => (x.id === n.id ? saved : x)))
                       }}
                     />

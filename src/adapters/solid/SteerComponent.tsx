@@ -423,7 +423,24 @@ export function SteerComponent() {
     >
   >({})
 
-  const pinCoords = (note: SteerNote) => pinOverride()[note.id]?.coords ?? note.coords
+  const pinCoords = (note: SteerNote) => {
+    const override = pinOverride()[note.id]?.coords
+    if (override) return override
+    // Live-app notes store element-box fractions and a page selector.
+    // Map them onto the specimen root so the pin sits on the component.
+    if (note.selector.startsWith("html") && stageRef) {
+      const target = (stageRef.firstElementChild as HTMLElement | null) ?? stageRef
+      const stage = stageRef.getBoundingClientRect()
+      const box = target.getBoundingClientRect()
+      if (stage.width && stage.height) {
+        return {
+          x: (box.left - stage.left + note.coords.x * box.width) / stage.width,
+          y: (box.top - stage.top + note.coords.y * box.height) / stage.height,
+        }
+      }
+    }
+    return note.coords
+  }
   const pinRect = (note: SteerNote) => {
     const override = pinOverride()[note.id]
     return override ? override.rect : note.rect
