@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "steerui",
+  "name": "steer-ui",
   "compatibility_date": "2026-08-13",
   // Assets-only Worker: the site is fully prerendered, so there is no
   // `main` script and therefore no ASSETS binding to declare.
