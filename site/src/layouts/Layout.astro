@@ -1,0 +1,33 @@
+---
+import "../styles/global.css"
+
+interface Props {
+  title?: string
+  description?: string
+  /** One screen, no scroll. The landing page is a canvas, not a document. */
+  fullscreen?: boolean
+}
+
+const {
+  title = "steer-ui",
+  description = "The visual interface for steering coding agents. Pin notes anywhere directly in your app. Your agent reads them as JSON in your repo, makes every change in one pass, and responds to your notes.",
+  fullscreen = false,
+} = Astro.props
+---
+
+<!doctype html>
+<html lang="en" class={fullscreen ? "h-full overflow-hidden" : ""}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body class={`relative ${fullscreen ? "h-full overflow-hidden" : "min-h-screen"}`}>
+    <slot />
+  </body>
+</html>

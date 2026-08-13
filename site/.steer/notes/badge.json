@@ -1,0 +1,24 @@
+[
+  {
+    "id": "seed-badge-1",
+    "component": "badge",
+    "stateUrl": "/__steer/badge?tone=human&draft=true",
+    "selector": "span",
+    "coords": {
+      "x": 0.5,
+      "y": -0.5
+    },
+    "text": "Contrast is too low to read at this size.",
+    "author": "andrés",
+    "status": "open",
+    "created": "2026-08-13T16:02:14.493015Z",
+    "replies": [
+      {
+        "id": "seed-badge-1-r1",
+        "author": "agent",
+        "text": "Raised the text a step and added a ring. Should the neutral tone get one too, or stay flat?",
+        "created": "2026-08-13T16:05:14.493017Z"
+      }
+    ]
+  }
+]

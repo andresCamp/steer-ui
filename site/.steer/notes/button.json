@@ -1,0 +1,24 @@
+[
+  {
+    "id": "seed-button-1",
+    "component": "button",
+    "stateUrl": "/__steer/button?draft=true",
+    "selector": "a",
+    "coords": {
+      "x": 0.5,
+      "y": -0.35
+    },
+    "text": "Corners are sharper than everything else on the page.",
+    "author": "andrés",
+    "status": "resolved",
+    "created": "2026-08-13T13:16:14.492900Z",
+    "replies": [
+      {
+        "id": "seed-button-1-r1",
+        "author": "agent",
+        "text": "Rounded to a pill and softened the press shadow. Same change carried to the secondary variant.",
+        "created": "2026-08-13T13:20:14.493008Z"
+      }
+    ]
+  }
+]

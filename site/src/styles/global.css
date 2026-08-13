@@ -1,0 +1,102 @@
+@import "tailwindcss";
+/* The product surface lives in the lab, outside this site; scan it too. */
+@source "../../../src/adapters/solid";
+
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "SF Pro Text", "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
+  --color-surface: #f7f7f8;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  @apply bg-[#f7f7f8] text-zinc-900 antialiased;
+  font-feature-settings: "cv05", "ss01";
+  margin: 0;
+}
+
+/*
+ * Apple liquid-glass material, the same recipe the product's own chrome uses:
+ * frosted translucency (blur + saturate + brightness), rim light on every
+ * inner edge, hairline border, soft double drop shadow.
+ */
+.glass {
+  background: linear-gradient(135deg, rgba(255,255,255,0.62) 0%, rgba(255,255,255,0.44) 100%);
+  backdrop-filter: blur(24px) saturate(180%) brightness(1.08);
+  -webkit-backdrop-filter: blur(24px) saturate(180%) brightness(1.08);
+  border: 1px solid rgba(255,255,255,0.55);
+  box-shadow:
+    inset 0 1px 1px rgba(255,255,255,0.75),
+    inset 0 -1px 1px rgba(255,255,255,0.3),
+    inset 1px 0 1px rgba(255,255,255,0.25),
+    inset -1px 0 1px rgba(255,255,255,0.25),
+    0 1px 2px rgba(0,0,0,0.04),
+    0 12px 40px rgba(0,0,0,0.1);
+}
+
+/* Continuous (squircle) corners where supported, generous radius otherwise */
+.smooth-corners { border-radius: 28px; }
+.smooth-corners-sm { border-radius: 14px; }
+@supports (corner-shape: squircle) {
+  .smooth-corners { corner-shape: squircle; border-radius: 36px; }
+  .smooth-corners-sm { corner-shape: squircle; border-radius: 18px; }
+}
+
+/* World-space dot grid: invisible at rest, fades in while navigating. */
+.canvas-dots { opacity: 0; transition: opacity 400ms ease; }
+.canvas-dots.navigating { opacity: 1; transition: opacity 120ms ease; }
+
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.rise-in { animation: rise-in 360ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes pin-drop {
+  0% { opacity: 0; transform: scale(0.4) translateY(-10px); }
+  60% { opacity: 1; transform: scale(1.12) translateY(0); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+.pin-drop { animation: pin-drop 340ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Every catalog component animates its own refinement, so the note resolving
+   and the component changing are the same moment. */
+.refines {
+  transition:
+    border-color 560ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 560ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 560ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 560ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-radius 560ms cubic-bezier(0.22, 1, 0.36, 1),
+    letter-spacing 560ms cubic-bezier(0.22, 1, 0.36, 1),
+    font-weight 560ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 560ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.no-cursor { cursor: none; }
+
+/* Idle drift: the scatter breathes, each tile on its own phase. */
+@keyframes float {
+  from { transform: translateY(-3px); }
+  to { transform: translateY(3px); }
+}
+.float {
+  animation-name: float;
+  animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+@media (prefers-reduced-motion: reduce) {
+  .float { animation: none; }
+}
+
+/* Material ripple: expands from the press point, then fades. */
+@keyframes ripple {
+  from { width: 0; height: 0; opacity: 0.45; }
+  to { width: 220px; height: 220px; opacity: 0; }
+}
+.ripple {
+  transform: translate(-50%, -50%);
+  animation: ripple 600ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}

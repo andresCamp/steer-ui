@@ -1,0 +1,8 @@
+{
+  "states": {
+    "default": { "variant": "primary", "children": "Open the bench" },
+    "secondary": { "variant": "secondary", "children": "Read the source" },
+    "ghost": { "variant": "ghost", "children": "GitHub" },
+    "draft": { "variant": "primary", "children": "Open the bench", "draft": "true" }
+  }
+}

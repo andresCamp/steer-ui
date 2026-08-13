@@ -1,0 +1,18 @@
+{
+  "states": {
+    "default": {
+      "title": "Notes live in your repo",
+      "body": "Every pin is a JSON file on the branch you are on."
+    },
+    "plain": {
+      "tone": "plain",
+      "title": "One pass",
+      "body": "Twelve notes go in together, and come back together."
+    },
+    "draft": {
+      "draft": "true",
+      "title": "Notes live in your repo",
+      "body": "Every pin is a JSON file on the branch you are on."
+    }
+  }
+}

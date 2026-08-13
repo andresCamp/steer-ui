@@ -3,3 +3,8 @@ dist
 playground/app/.steer/manifest.json
 playground/react-app/.steer/manifest.json
 .playwright-mcp/
+
+# the marketing site's generated steer data (rebuilt by `pnpm steer`)
+site/.steer/manifest.json
+site/public/__steer/api/
+site/.astro/

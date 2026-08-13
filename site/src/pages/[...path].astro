@@ -1,0 +1,24 @@
+---
+import Layout from "../layouts/Layout.astro"
+import Bench from "../islands/Bench"
+import manifest from "../../public/__steer/api/manifest.json"
+
+/**
+ * The bench routes. They live in a catch-all because Astro treats any path
+ * segment starting with an underscore as private, and the product's route
+ * base is /__steer, which is contract, not configuration.
+ */
+export function getStaticPaths() {
+  const components = (manifest as { components: { slug: string; name: string }[] }).components ?? []
+  return [
+    { params: { path: "__steer" }, props: { name: "Components" } },
+    ...components.map((c) => ({ params: { path: `__steer/${c.slug}` }, props: { name: c.name } })),
+  ]
+}
+
+const { name } = Astro.props
+---
+
+<Layout title={`${name}, steer-ui`}>
+  <div id="steer-root"><Bench client:only="solid-js" /></div>
+</Layout>

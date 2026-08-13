@@ -1,0 +1,25 @@
+{
+  "name": "steerui-site",
+  "type": "module",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "pnpm steer && astro dev --port 4321",
+    "build": "pnpm steer && astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "steer": "bun scripts/gen-steer.ts"
+  },
+  "dependencies": {
+    "@astrojs/solid-js": "^5.1.0",
+    "@solidjs/router": "^0.15.4",
+    "@tailwindcss/vite": "^4.1.11",
+    "astro": "^5.13.0",
+    "lucide-solid": "^1.31.0",
+    "solid-js": "^1.9.7",
+    "tailwindcss": "^4.1.11"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}

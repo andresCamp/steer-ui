@@ -1,0 +1,7 @@
+{
+  "states": {
+    "default": { "command": "/plugin marketplace add andresCamp/steer-ui" },
+    "shell": { "command": "git clone https://github.com/andresCamp/steer-ui", "prompt": "$" },
+    "draft": { "command": "/plugin marketplace add andresCamp/steer-ui", "draft": "true" }
+  }
+}

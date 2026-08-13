@@ -1,0 +1,24 @@
+[
+  {
+    "id": "seed-card-1",
+    "component": "card",
+    "stateUrl": "/__steer/card?draft=true",
+    "selector": "div",
+    "coords": {
+      "x": 0.5,
+      "y": -0.3
+    },
+    "text": "This border reads too dark against the page.",
+    "author": "andrés",
+    "status": "resolved",
+    "created": "2026-08-13T12:16:14.493011Z",
+    "replies": [
+      {
+        "id": "seed-card-1-r1",
+        "author": "agent",
+        "text": "Lightened it and added the soft lift the rest of the page uses.",
+        "created": "2026-08-13T12:24:14.493013Z"
+      }
+    ]
+  }
+]

@@ -1,0 +1,8 @@
+{
+  "states": {
+    "default": { "tone": "neutral", "children": "Resolved" },
+    "human": { "tone": "human", "children": "2 open" },
+    "agent": { "tone": "agent", "children": "agent replied" },
+    "draft": { "tone": "human", "children": "2 open", "draft": "true" }
+  }
+}

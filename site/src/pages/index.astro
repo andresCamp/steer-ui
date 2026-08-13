@@ -1,0 +1,57 @@
+---
+import Layout from "../layouts/Layout.astro"
+import HeroCanvas from "../islands/HeroCanvas"
+import PageNotes from "../islands/PageNotes"
+import { CopyBox } from "../components/CopyBox"
+---
+
+<Layout title="steer-ui, the visual interface for steering coding agents" fullscreen>
+  <div class="relative h-[100dvh] w-full overflow-hidden">
+    <HeroCanvas client:load />
+
+    {/* White vignette: a halo behind the headline, a soft edge around everything. */}
+    <div
+      class="pointer-events-none absolute inset-0 z-20"
+      style="background:
+        radial-gradient(ellipse 30% 22% at 50% 48%, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0.7) 55%, rgba(255,255,255,0) 100%),
+        linear-gradient(to right, #ffffff 0%, rgba(255,255,255,0.92) 3%, rgba(255,255,255,0) 13%),
+        linear-gradient(to left, #ffffff 0%, rgba(255,255,255,0.92) 3%, rgba(255,255,255,0) 13%),
+        linear-gradient(to bottom, #ffffff 0%, rgba(255,255,255,0.9) 2%, rgba(255,255,255,0) 11%),
+        linear-gradient(to top, #ffffff 0%, rgba(255,255,255,0.9) 2%, rgba(255,255,255,0) 11%);"
+    >
+    </div>
+
+    <nav class="absolute inset-x-0 top-0 z-30 flex items-center justify-between px-6 py-6 sm:px-8">
+      <a href="/" class="text-[17px] font-semibold tracking-tight">steer-ui</a>
+      <div class="flex items-center gap-5 text-[15px] text-zinc-500">
+        <a href="/__steer" class="hover:text-zinc-900">Bench</a>
+        <a href="https://github.com/andresCamp/steer-ui" class="hover:text-zinc-900">GitHub</a>
+      </div>
+    </nav>
+
+    <div class="pointer-events-none absolute inset-0 z-30 flex items-center justify-center px-6">
+      <div class="pointer-events-auto mx-auto max-w-[580px] text-center">
+        <h1
+          data-steer="HeroTitle"
+          class="text-[36px] font-semibold leading-[1.08] tracking-tight text-zinc-900 sm:text-[46px]"
+        >
+          The visual interface for steering coding agents
+        </h1>
+        <p data-steer="HeroSubhead" class="mx-auto mt-5 max-w-[490px] text-[17px] leading-relaxed text-zinc-600">
+          Pin notes anywhere directly in your app. Your agent reads them as JSON in your repo, makes every change in one
+          pass, and responds to your notes.
+        </p>
+        <div class="mt-7 flex justify-center">
+          <CopyBox client:load />
+        </div>
+        <p class="mt-3 text-[14px] text-zinc-400">MIT. Runs in your dev server. Ships nothing to production.</p>
+      </div>
+    </div>
+
+    <div class="absolute bottom-7 right-6 z-30 hidden text-[13px] text-zinc-400 lg:block sm:right-8">
+      <a href="https://github.com/andresCamp/steer-ui" class="hover:text-zinc-700">github.com/andresCamp/steer-ui</a>
+    </div>
+
+    <PageNotes client:load />
+  </div>
+</Layout>
