@@ -4,6 +4,13 @@
   "compatibility_date": "2026-08-13",
   // Assets-only Worker: the site is fully prerendered, so there is no
   // `main` script and therefore no ASSETS binding to declare.
+  //
+  // `site/dist` is generated, not committed. Whatever runs `wrangler deploy`
+  // must run `pnpm run build` first or this directory will not exist.
+  // Workers Builds config for this Worker (dashboard: Settings > Build):
+  //   root directory: /
+  //   build command:  pnpm run build
+  //   deploy command: npx wrangler deploy
   "assets": {
     "directory": "./site/dist"
   },
