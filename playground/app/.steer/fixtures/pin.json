@@ -1,0 +1,9 @@
+{
+  "states": {
+    "default": { "label": "1", "author": "human", "matchesState": "true" },
+    "this state": { "label": "1", "author": "human", "matchesState": "true" },
+    "other state": { "label": "2", "author": "human", "matchesState": "false" },
+    "agent": { "label": "3", "author": "agent", "matchesState": "true" },
+    "agent other": { "label": "3", "author": "agent", "matchesState": "false" }
+  }
+}

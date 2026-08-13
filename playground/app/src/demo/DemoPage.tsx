@@ -1,4 +1,3 @@
-import { A } from "@solidjs/router"
 import { Button } from "../components/Button"
 import { Badge } from "../components/Badge"
 import { Input } from "../components/Input"
@@ -58,9 +57,13 @@ export function DemoPage() {
 
       <p class="mt-12 text-sm text-zinc-500">
         This is the fake product. The interesting part is the{" "}
-        <A href="/__steer" class="cursor-pointer font-medium text-indigo-600 hover:text-indigo-800">
+        <a
+          href="/__steer"
+          rel="external"
+          class="cursor-pointer font-medium text-indigo-600 hover:text-indigo-800"
+        >
           steer
-        </A>
+        </a>
         .
       </p>
     </div>

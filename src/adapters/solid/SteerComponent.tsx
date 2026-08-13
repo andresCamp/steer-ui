@@ -14,9 +14,13 @@ import Plus from "lucide-solid/icons/plus"
 import Minus from "lucide-solid/icons/minus"
 import Link2 from "lucide-solid/icons/link-2"
 import Check from "lucide-solid/icons/check"
-import MessageSquarePlus from "lucide-solid/icons/message-square-plus"
 import RotateCcw from "lucide-solid/icons/rotate-ccw"
 import ArrowLeft from "lucide-solid/icons/arrow-left"
+import { AddNote } from "./chrome/AddNote"
+import { GhostPin } from "./chrome/GhostPin"
+import { NoteThread } from "./chrome/NoteThread"
+import { Pin } from "./chrome/Pin"
+import { Region } from "./chrome/Region"
 import {
   steerAuthor,
   coerceProps,
@@ -680,14 +684,14 @@ export function SteerComponent() {
                 <Show when={noteMode() && !pending() && hoverPin()}>
                   {(h) => (
                     <div
-                      class="pointer-events-none absolute z-10 flex size-7 items-center justify-center rounded-full bg-amber-400/60 shadow-[0_2px_10px_rgba(217,119,6,0.3)] ring-2 ring-white/70"
+                      class="pointer-events-none absolute z-10"
                       style={{
                         left: `${h().x * 100}%`,
                         top: `${h().y * 100}%`,
                         transform: `translate(-50%, -50%) scale(${1 / zoom()})`,
                       }}
                     >
-                      <Plus size={16} stroke-width={2} class="text-white" />
+                      <GhostPin />
                     </div>
                   )}
                 </Show>
@@ -702,43 +706,20 @@ export function SteerComponent() {
                       <Show when={noteMatchesState(note) && pinRect(note)}>
                         {(r) => (
                           <div
-                            class={`group/region absolute z-[5] rounded-md border-2 transition-colors duration-200 ${
-                              noteMode()
-                                ? "pointer-events-none"
-                                : "cursor-grab active:cursor-grabbing"
-                            } ${
-                              openPin() === note.id
-                                ? "border-amber-400/80 bg-amber-400/10"
-                                : "border-amber-400/25 bg-amber-400/[0.04] hover:border-amber-400/50"
-                            }`}
+                            class="absolute z-[5]"
                             style={{
                               left: `${r().x * 100}%`,
                               top: `${r().y * 100}%`,
                               width: `${r().w * 100}%`,
                               height: `${r().h * 100}%`,
                             }}
-                            onPointerDown={onNoteDrag(note)}
                           >
-                            <For
-                              each={[
-                                { cx: 0 as const, cy: 0 as const, pos: "left-0 top-0", cursor: "cursor-nwse-resize" },
-                                { cx: 1 as const, cy: 0 as const, pos: "right-0 top-0", cursor: "cursor-nesw-resize" },
-                                { cx: 0 as const, cy: 1 as const, pos: "left-0 bottom-0", cursor: "cursor-nesw-resize" },
-                                { cx: 1 as const, cy: 1 as const, pos: "right-0 bottom-0", cursor: "cursor-nwse-resize" },
-                              ]}
-                            >
-                              {(corner) => (
-                                <div
-                                  class={`absolute size-4 ${corner.pos} ${corner.cursor} ${
-                                    corner.cx === 0 ? "-translate-x-1/2" : "translate-x-1/2"
-                                  } ${corner.cy === 0 ? "-translate-y-1/2" : "translate-y-1/2"} flex items-center justify-center opacity-0 transition-opacity duration-150 group-hover/region:opacity-100`}
-                                  style={{ transform: `scale(${1 / zoom()})` }}
-                                  onPointerDown={onRegionResize(note, corner.cx, corner.cy)}
-                                >
-                                  <div class="size-2.5 rounded-full border-2 border-amber-400 bg-white shadow-sm" />
-                                </div>
-                              )}
-                            </For>
+                            <Region
+                              open={openPin() === note.id}
+                              inert={noteMode()}
+                              onPointerDown={onNoteDrag(note)}
+                              onResize={(cx, cy, e) => onRegionResize(note, cx, cy)(e)}
+                            />
                           </div>
                         )}
                       </Show>
@@ -751,94 +732,27 @@ export function SteerComponent() {
                         }}
                         data-steer-note-id={note.id}
                       >
-                      <button
-                        type="button"
-                        class={`flex size-7 items-center justify-center rounded-full font-mono text-base font-semibold text-white transition-all ${
-                          note.author === "agent"
-                            ? noteMatchesState(note)
-                              ? "cursor-grab bg-indigo-500 shadow-[0_2px_10px_rgba(79,70,229,0.45)] hover:scale-110 active:cursor-grabbing"
-                              : "cursor-pointer scale-75 bg-indigo-500/40 hover:scale-90 hover:bg-indigo-500/70"
-                            : noteMatchesState(note)
-                              ? "cursor-grab bg-amber-400 shadow-[0_2px_10px_rgba(217,119,6,0.45)] hover:scale-110 active:cursor-grabbing"
-                              : "cursor-pointer scale-75 bg-amber-400/40 hover:scale-90 hover:bg-amber-400/70"
-                        }`}
-                        title={
-                          noteMatchesState(note)
-                            ? undefined
-                            : "Note from another state · click to jump to it"
-                        }
+                      <Pin
+                        label={String(i() + 1)}
+                        author={note.author === "agent" ? "agent" : "human"}
+                        matchesState={noteMatchesState(note)}
                         onPointerDown={onNoteDrag(note)}
-                      >
-                        {i() + 1}
-                      </button>
+                      />
                       <Show when={openPin() === note.id}>
-                        <div
-                          class="glass absolute bottom-9 left-0 z-20 w-80 rounded-2xl p-4"
-                          onClick={(e) => e.stopPropagation()}
-                          onPointerDown={(e) => e.stopPropagation()}
-                        >
-                          <div class="flex items-baseline justify-between gap-3">
-                            <span class="flex items-baseline gap-2">
-                              <span
-                                class={`font-mono text-base ${
-                                  note.author === "agent" ? "text-indigo-500" : "text-zinc-400"
-                                }`}
-                              >
-                                {note.author}
-                              </span>
-                              <span class="font-mono text-base text-zinc-300">
-                                {timeAgo(note.created)}
-                              </span>
-                            </span>
-                            <button
-                              type="button"
-                              class="cursor-pointer text-base font-medium text-zinc-400 transition-colors hover:text-zinc-900"
-                              onClick={() => handleResolve(note.id)}
-                            >
-                              resolve
-                            </button>
-                          </div>
-                          <p class="mt-1 text-base leading-relaxed text-zinc-800">{note.text}</p>
-
-                          <Show when={(note.replies ?? []).length > 0}>
-                            <div class="mt-3 flex flex-col gap-2.5 border-t border-black/[0.05] pt-3">
-                              <For each={note.replies}>
-                                {(reply) => (
-                                  <div>
-                                    <span class="flex items-baseline gap-2">
-                                      <span
-                                        class={`font-mono text-base ${
-                                          reply.author === "agent"
-                                            ? "text-indigo-500"
-                                            : "text-zinc-400"
-                                        }`}
-                                      >
-                                        {reply.author}
-                                      </span>
-                                      <span class="font-mono text-base text-zinc-300">
-                                        {timeAgo(reply.created)}
-                                      </span>
-                                    </span>
-                                    <p class="mt-0.5 text-base leading-relaxed text-zinc-800">
-                                      {reply.text}
-                                    </p>
-                                  </div>
-                                )}
-                              </For>
-                            </div>
-                          </Show>
-
-                          <input
-                            type="text"
-                            class="mt-3 h-10 w-full rounded-lg bg-black/[0.04] px-3 text-base text-zinc-800 outline-none transition-colors placeholder:text-zinc-300 focus:bg-black/[0.06]"
-                            placeholder="Reply…"
-                            value={replyText()}
-                            onInput={(e) => setReplyText(e.currentTarget.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") submitReply(note)
-                              e.stopPropagation()
-                            }}
-                            data-steer-reply-input
+                        <div class="absolute bottom-9 left-0 z-20">
+                          <NoteThread
+                            author={note.author}
+                            createdLabel={timeAgo(note.created)}
+                            text={note.text}
+                            replies={(note.replies ?? []).map((r) => ({
+                              author: r.author,
+                              createdLabel: timeAgo(r.created),
+                              text: r.text,
+                            }))}
+                            replyValue={replyText()}
+                            onResolve={() => handleResolve(note.id)}
+                            onReplyInput={setReplyText}
+                            onReply={() => submitReply(note)}
                           />
                         </div>
                       </Show>
@@ -957,32 +871,14 @@ export function SteerComponent() {
               </button>
             </div>
 
-            {/* note toggle, bottom center */}
-            <div class="rise-in group absolute bottom-5 left-1/2 -translate-x-1/2" style={{ "animation-delay": "240ms" }}>
-              <div class="glass pointer-events-none absolute bottom-full left-1/2 mb-2.5 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-                <span class="text-base font-medium text-zinc-700">
-                  {noteMode() ? "Cancel" : "Add note"}
-                </span>
-                <kbd class="rounded-md bg-black/[0.05] px-1.5 py-0.5 font-mono text-base text-zinc-400">
-                  {noteMode() ? "esc" : "C"}
-                </kbd>
-              </div>
-              <button
-                type="button"
-                class={`flex h-13 cursor-pointer items-center gap-2.5 rounded-full px-6 text-base font-medium transition-all ${
-                  noteMode()
-                    ? "bg-amber-400 text-white shadow-[0_4px_20px_rgba(217,119,6,0.4)]"
-                    : "glass text-zinc-600 hover:text-zinc-900"
-                }`}
+            <div class="rise-in absolute bottom-5 left-1/2 -translate-x-1/2" style={{ "animation-delay": "240ms" }}>
+              <AddNote
+                noteMode={noteMode()}
                 onClick={() => {
                   setNoteMode(!noteMode())
                   setPending(undefined)
                 }}
-                data-steer-note-toggle
-              >
-                <MessageSquarePlus size={20} stroke-width={1.75} />
-                {noteMode() ? "Cancel" : "Add note"}
-              </button>
+              />
             </div>
 
             {/* knobs panel, right */}

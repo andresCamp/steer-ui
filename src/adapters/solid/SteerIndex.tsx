@@ -118,9 +118,13 @@ export function SteerIndex() {
     <div class="mx-auto max-w-5xl px-10 pb-24 pt-16">
       <header class="rise-in mb-16 flex items-baseline justify-between">
         <h1 class="font-mono text-[17px] font-semibold tracking-tight">steer</h1>
-        <A href="/" class="cursor-pointer text-base text-zinc-400 transition-colors hover:text-zinc-900">
+        <a
+          href="/"
+          rel="external"
+          class="cursor-pointer text-base text-zinc-400 transition-colors hover:text-zinc-900"
+        >
           app
-        </A>
+        </a>
       </header>
 
       <Suspense>

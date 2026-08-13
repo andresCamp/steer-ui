@@ -1,0 +1,7 @@
+{
+  "states": {
+    "default": { "open": "false", "inert": "false" },
+    "open": { "open": "true", "inert": "false" },
+    "inert": { "open": "false", "inert": "true" }
+  }
+}

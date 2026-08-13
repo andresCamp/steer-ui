@@ -1,0 +1,6 @@
+{
+  "states": {
+    "default": { "noteMode": "false" },
+    "armed": { "noteMode": "true" }
+  }
+}

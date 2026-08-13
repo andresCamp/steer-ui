@@ -1,4 +1,3 @@
-import { Link } from "react-router"
 import { Button } from "../components/Button"
 import { Badge } from "../components/Badge"
 import { Input } from "../components/Input"
@@ -58,12 +57,13 @@ export function DemoPage() {
 
       <p className="mt-12 text-sm text-zinc-500">
         This is the fake product. The interesting part is the{" "}
-        <Link
-          to="/__steer"
+        <a
+          href="/__steer"
+          rel="external"
           className="cursor-pointer font-medium text-indigo-600 hover:text-indigo-800"
         >
           steer
-        </Link>
+        </a>
         .
       </p>
     </div>

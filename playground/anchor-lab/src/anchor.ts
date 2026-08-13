@@ -38,8 +38,12 @@ export interface Anchor {
   text: string
   /** Text of the nearest ancestor that differs from `text`. */
   context: string
-  /** Fractions of the element's own border box. */
+  /** Fractions of the element's own border box. May fall outside 0..1 when
+   *  the note sits in a gutter, which SteerNote already allows. */
   elCoords: { x: number; y: number }
+  /** True when the anchor element was reached by walking up from whitespace
+   *  rather than being clicked directly. */
+  viaAncestor: boolean
   /** Absolute document coordinates at capture time. */
   pageCoords: { x: number; y: number }
   /** Reproduction context, per BugHerd/Marker's lesson. */
@@ -96,6 +100,7 @@ export function fingerprintOf(el: Element): string {
 }
 
 export function cssPath(el: Element, root: Element): string {
+  if (el === root) return ":scope"
   const parts: string[] = []
   let cur: Element | null = el
   while (cur && cur !== root) {
@@ -118,8 +123,67 @@ function stableSelectorOf(el: Element): string | undefined {
   return undefined
 }
 
-/** Capture an anchor for `el` at a viewport point. */
-export function captureAnchor(el: Element, clientX: number, clientY: number, root: Element): Anchor {
+export interface Box {
+  left: number
+  top: number
+  width: number
+  height: number
+}
+
+/**
+ * The deepest element whose box fully contains `box`. A region drawn across two
+ * cards resolves to the grid holding them; a region inside one card resolves to
+ * the card. This is what a region anchors to.
+ */
+export function deepestContaining(root: Element, box: Box): Element {
+  const right = box.left + box.width
+  const bottom = box.top + box.height
+  let best: Element = root
+  let bestArea = Infinity
+  let bestLoc: Element | null = null
+  let bestLocArea = Infinity
+  for (const el of [root, ...Array.from(root.querySelectorAll("*"))]) {
+    const b = el.getBoundingClientRect()
+    if (!b.width || !b.height) continue
+    if (b.left > box.left || b.top > box.top || b.right < right || b.bottom < bottom) continue
+    const area = b.width * b.height
+    if (area < bestArea) {
+      bestArea = area
+      best = el
+    }
+    if (el.hasAttribute("data-steer-loc") && area < bestLocArea) {
+      bestLocArea = area
+      bestLoc = el
+    }
+  }
+  // An element with a loc is identifiable across source edits; one without is
+  // only findable structurally. Prefer the former even when it is larger.
+  return bestLoc ?? best
+}
+
+/**
+ * A click on whitespace lands on a padding box or a bare wrapper. Walk up to
+ * something the resolver can actually identify, and record that we did.
+ */
+export function nearestAnchorable(el: Element, root: Element): { el: Element; viaAncestor: boolean } {
+  let cur: Element | null = el
+  let hops = 0
+  while (cur && cur !== root) {
+    if (cur.hasAttribute("data-steer-loc")) return { el: cur, viaAncestor: hops > 0 }
+    cur = cur.parentElement
+    hops++
+  }
+  return { el: root, viaAncestor: true }
+}
+
+/** Capture an anchor for `el` at a viewport point, optionally with a region. */
+export function captureAnchor(
+  el: Element,
+  clientX: number,
+  clientY: number,
+  root: Element,
+  viaAncestor = false,
+): Anchor {
   const raw = el.getAttribute("data-steer-loc")
   const source = parseLoc(raw)
   let occurrence = 0
@@ -141,6 +205,7 @@ export function captureAnchor(el: Element, clientX: number, clientY: number, roo
     fingerprint: fingerprintOf(el),
     text: collapse(el.textContent ?? ""),
     context: ancestorContext(el, root),
+    viaAncestor,
     elCoords: {
       x: r.width ? (clientX - r.left) / r.width : 0.5,
       y: r.height ? (clientY - r.top) / r.height : 0.5,
@@ -174,6 +239,7 @@ export const byPageCoords: Strategy = (a, root) => {
 }
 
 export const byPath: Strategy = (a, root) => {
+  if (a.path === ":scope") return root
   try {
     return root.querySelector(a.path)
   } catch {
@@ -184,6 +250,7 @@ export const byPath: Strategy = (a, root) => {
 export const byStableSelector: Strategy = (a, root) => {
   if (!a.stableSelector) return byPath(a, root)
   try {
+    if (root.matches(a.stableSelector)) return root
     return root.querySelector(a.stableSelector) ?? null
   } catch {
     return null
@@ -306,7 +373,9 @@ function basename(p: string): string {
 
 /** Used when there is no usable source evidence at all. */
 function domFallback(a: Anchor, root: Element): Element | null {
+  if (a.path === ":scope") return root
   if (a.stableSelector) {
+    if (root.matches(a.stableSelector)) return root
     const el = root.querySelector(a.stableSelector)
     if (el) return el
   }
@@ -431,4 +500,144 @@ export function pinPoint(el: Element, a: Anchor): { x: number; y: number } {
     x: r.left + window.scrollX + a.elCoords.x * r.width,
     y: r.top + window.scrollY + a.elCoords.y * r.height,
   }
+}
+
+/** Fractions of an element's box, from a viewport rect. Inverse of boxOf. */
+export function fractionsOf(el: Element, box: Box): { x: number; y: number; w: number; h: number } {
+  const r = el.getBoundingClientRect()
+  return {
+    x: r.width ? (box.left - r.left) / r.width : 0,
+    y: r.height ? (box.top - r.top) / r.height : 0,
+    w: r.width ? box.width / r.width : 0,
+    h: r.height ? box.height / r.height : 0,
+  }
+}
+
+/** Viewport box for a region stored as fractions of the anchor element. */
+export function boxOf(el: Element, rect: { x: number; y: number; w: number; h: number }): Box {
+  const r = el.getBoundingClientRect()
+  return {
+    left: r.left + rect.x * r.width,
+    top: r.top + rect.y * r.height,
+    width: rect.w * r.width,
+    height: rect.h * r.height,
+  }
+}
+
+/** Leaf elements a region covers. Used to measure whether it still covers what
+ *  it covered, which is the region equivalent of finding the right element. */
+export function covered(root: Element, box: Box): Set<string> {
+  const right = box.left + box.width
+  const bottom = box.top + box.height
+  const out = new Set<string>()
+  for (const el of Array.from(root.querySelectorAll("[data-truth-id], [data-demo-id]"))) {
+    const b = el.getBoundingClientRect()
+    if (!b.width || !b.height) continue
+    const overlapW = Math.min(b.right, right) - Math.max(b.left, box.left)
+    const overlapH = Math.min(b.bottom, bottom) - Math.max(b.top, box.top)
+    if (overlapW <= 0 || overlapH <= 0) continue
+    // Count it as covered when most of the element is inside the region.
+    if ((overlapW * overlapH) / (b.width * b.height) < 0.6) continue
+    const id = el.getAttribute("data-truth-id") ?? el.getAttribute("data-demo-id")
+    if (id) out.add(id)
+  }
+  return out
+}
+
+
+// ------------------------------------------------------------------ regions
+//
+// Measured on the demo dashboard: a region stored purely as fractions of its
+// container held its element every time and still lost half its coverage, both
+// on a narrow resize and on a data shuffle. Fractions of a 4-column grid cover
+// different tiles once that grid is 2-column.
+//
+// So a region gets the same treatment points did: remember what it covered,
+// not where it sat. The geometric rect stays as the fallback for a region that
+// covers nothing identifiable (drawn over whitespace).
+
+export interface RegionAnchor {
+  /** Smallest identifiable element fully containing the region. */
+  container: Anchor
+  /** Fractions of the container's box. Geometric fallback only. */
+  rect: { x: number; y: number; w: number; h: number }
+  /** The elements the region was drawn over. The durable part. */
+  members: Anchor[]
+  /** Gap between the drawn box and the union of its members, in px. */
+  pad: { l: number; t: number; r: number; b: number }
+}
+
+function unionBox(els: Element[]): Box | null {
+  if (!els.length) return null
+  let left = Infinity
+  let top = Infinity
+  let right = -Infinity
+  let bottom = -Infinity
+  for (const el of els) {
+    const b = el.getBoundingClientRect()
+    left = Math.min(left, b.left)
+    top = Math.min(top, b.top)
+    right = Math.max(right, b.right)
+    bottom = Math.max(bottom, b.bottom)
+  }
+  return { left, top, width: right - left, height: bottom - top }
+}
+
+/** Elements the region is drawn over: mostly inside it, and not containing it. */
+function membersIn(root: Element, box: Box): Element[] {
+  const right = box.left + box.width
+  const bottom = box.top + box.height
+  const out: Element[] = []
+  for (const el of Array.from(root.querySelectorAll("[data-steer-loc]"))) {
+    const b = el.getBoundingClientRect()
+    if (!b.width || !b.height) continue
+    // Skip anything that wraps the whole region; that is the container's job.
+    if (b.left <= box.left && b.top <= box.top && b.right >= right && b.bottom >= bottom) continue
+    const ow = Math.min(b.right, right) - Math.max(b.left, box.left)
+    const oh = Math.min(b.bottom, bottom) - Math.max(b.top, box.top)
+    if (ow <= 0 || oh <= 0) continue
+    if ((ow * oh) / (b.width * b.height) < 0.6) continue
+    out.push(el)
+  }
+  // Drop members that merely wrap other members; keep the outermost distinct
+  // subtrees so the union is stable rather than double-counted.
+  return out.filter((el) => !out.some((other) => other !== el && other.contains(el)))
+}
+
+export function captureRegion(root: Element, box: Box): RegionAnchor {
+  const container = deepestContaining(root, box)
+  const memberEls = membersIn(root, box)
+  const u = unionBox(memberEls)
+  return {
+    container: captureAnchor(container, box.left, box.top, root, true),
+    rect: fractionsOf(container, box),
+    members: memberEls.map((el) => {
+      const b = el.getBoundingClientRect()
+      return captureAnchor(el, b.left + b.width / 2, b.top + b.height / 2, root, false)
+    }),
+    pad: u
+      ? {
+          l: u.left - box.left,
+          t: u.top - box.top,
+          r: box.left + box.width - (u.left + u.width),
+          b: box.top + box.height - (u.top + u.height),
+        }
+      : { l: 0, t: 0, r: 0, b: 0 },
+  }
+}
+
+/** Viewport box for a region: union of whatever members still exist. */
+export function resolveRegion(root: Element, r: RegionAnchor): Box | null {
+  const found = r.members.map((m) => layeredV2(m, root)).filter((e): e is Element => !!e)
+  const u = unionBox(found)
+  if (u) {
+    return {
+      left: u.left - r.pad.l,
+      top: u.top - r.pad.t,
+      width: u.width + r.pad.l + r.pad.r,
+      height: u.height + r.pad.t + r.pad.b,
+    }
+  }
+  const container = layeredV2(r.container, root)
+  return container ? boxOf(container, r.rect) : null
 }

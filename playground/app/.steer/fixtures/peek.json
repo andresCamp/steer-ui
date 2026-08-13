@@ -1,0 +1,23 @@
+{
+  "states": {
+    "default": { "count": "6", "expanded": "false", "pinsVisible": "false" },
+    "open": {
+      "count": "6",
+      "expanded": "true",
+      "pinsVisible": "true",
+      "width": "1280",
+      "band": "xl",
+      "here": "4",
+      "away": "2"
+    },
+    "noting": { "count": "6", "expanded": "true", "noteMode": "true" },
+    "narrow": {
+      "count": "6",
+      "expanded": "true",
+      "width": "420",
+      "band": "xs",
+      "here": "1",
+      "away": "5"
+    }
+  }
+}

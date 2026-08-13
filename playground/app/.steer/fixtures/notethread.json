@@ -1,0 +1,19 @@
+{
+  "states": {
+    "default": {
+      "author": "andres",
+      "createdLabel": "3m",
+      "text": "This should be the hero. The label is out-shouting it."
+    },
+    "with reply": {
+      "author": "andres",
+      "createdLabel": "1h",
+      "text": "Red reads as an error state."
+    },
+    "agent": {
+      "author": "agent",
+      "createdLabel": "now",
+      "text": "Switched to zinc-500 with a caret."
+    }
+  }
+}

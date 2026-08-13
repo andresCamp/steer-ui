@@ -37,10 +37,7 @@ Stack recipes for instantiating steer-ui into a host. The lab is `~/onc9-systems
    plugins: [/* framework plugin */, tailwindcss(), steer({ componentDir: "src/components", typecheck: true })]
    ```
    Pass `excludeDirs: ["src/steer"]` only if the surface lives elsewhere (that value is the default).
-5. **Mount routes** in the app entry (import the register module for its side effect first):
-   - Solid: `<Route path="/__steer" component={SteerIndex} />` + `<Route path="/__steer/:slug" component={SteerComponent} />`
-   - React: `<Route path="/__steer" element={<SteerIndex />} />` + `<Route path="/__steer/:slug" element={<SteerComponent />} />`
-   Dev-only mounting (wrap in `import.meta.env.DEV`) is correct for hosts that ship this entry to production.
+5. **Do not mount steer-ui in the host router or App.** The plugin is `apply: "serve"`: it injects the overlay via `transformIndexHtml` and serves `/__steer` as its own HTML entry. The register module (`src/steer.ts`) is imported only by that virtual bench entry. If a host file imports `src/steer` or `SteerIndex`, it will ship. That is a bug.
 6. **Tailwind sources**: if the surface files live outside Tailwind's auto-detected content, add `@source "<relative path>";` after `@import "tailwindcss";`. Copy the `.glass`, `.smooth-corners`, `.canvas-dots`, `.rise-in` blocks from the lab's `playground/app/src/app.css`.
 7. **Scaffold `.steer/`**: create `fixtures/` and `notes/` (empty is fine), append `.steer/manifest.json` (path-adjusted) to `.gitignore`.
 8. **CLAUDE.md**: inject the block from `claude-md-block.md`.

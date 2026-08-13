@@ -45,12 +45,16 @@ async function readSources(
 
 export function fsSources(
   root: string,
-  options: { componentDir?: string; scanDir?: string } = {}
+  options: { componentDir?: string; extraComponentDirs?: string[]; scanDir?: string } = {}
 ): SourceStore {
   const componentDir = options.componentDir ?? "src/components"
+  const dirs = [componentDir, ...(options.extraComponentDirs ?? [])]
   const scanDir = options.scanDir ?? "src"
   return {
-    componentFiles: () => readSources(root, componentDir, ".tsx"),
+    componentFiles: async () => {
+      const batches = await Promise.all(dirs.map((dir) => readSources(root, dir, ".tsx")))
+      return batches.flat()
+    },
     // .ts included so checked extraction can reach imported type modules;
     // the usage scan only pattern-matches JSX so plain .ts files are inert.
     scanFiles: () => readSources(root, scanDir, [".tsx", ".ts"]),
