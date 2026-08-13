@@ -8,3 +8,5 @@ playground/react-app/.steer/manifest.json
 site/.steer/manifest.json
 site/public/__steer/api/
 site/.astro/
+.wrangler
+.dev.vars*

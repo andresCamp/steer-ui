@@ -15,7 +15,9 @@
     "dev:anchor": "vite playground/anchor-lab",
     "test": "vitest run",
     "check-types": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.react.json --noEmit && tsc -p tsconfig.lab.json --noEmit",
-    "playground": "bun playground/run.ts"
+    "playground": "bun playground/run.ts",
+    "build": "pnpm -C site install --frozen-lockfile && pnpm -C site run build",
+    "deploy": "wrangler deploy"
   },
   "dependencies": {
     "@solidjs/router": "^0.15.3",
@@ -36,6 +38,13 @@
     "tailwindcss": "^4.1.11",
     "vite": "^6.3.5",
     "vite-plugin-solid": "^2.11.6",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "wrangler": "^4.123.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "workerd"
+    ]
   }
 }
