@@ -23,7 +23,7 @@ import {
 } from "../../../src/core/notes"
 import { parseStateUrl } from "../../../src/core/state-url"
 
-/** SteerNote plus the one thing a page note needs that a stage note does not. */
+/** SteerNote plus the one thing a page note needs that a bench note does not. */
 interface PageNote extends SteerNote {
   anchor: Anchor
   /** Present when the note has a region. Members, not fractions, are what

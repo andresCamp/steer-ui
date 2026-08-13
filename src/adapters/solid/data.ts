@@ -40,11 +40,15 @@ export const registry: Record<string, Component<Record<string, unknown>>> = {}
 /** The author identity attached to notes written from this steer UI. */
 export let steerAuthor = "human"
 
+/** What the bench calls the place its home link goes back to. */
+export let steerAppLabel = "app"
+
 export function registerComponents(
   modules: Record<string, Record<string, unknown>>,
-  options: { author?: string } = {}
+  options: { author?: string; appLabel?: string } = {}
 ): void {
   if (options.author) steerAuthor = options.author
+  if (options.appLabel) steerAppLabel = options.appLabel
   for (const mod of Object.values(modules)) {
     for (const [exportName, value] of Object.entries(mod)) {
       if (typeof value === "function" && /^[A-Z]/.test(exportName)) {

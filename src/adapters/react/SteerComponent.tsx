@@ -226,7 +226,7 @@ export function SteerComponent() {
   const [navigating, setNavigating] = useState(false)
   const [animating, setAnimating] = useState(false)
   const [canvasEl, setCanvasEl] = useState<HTMLDivElement | null>(null)
-  const stageRef = useRef<HTMLDivElement>(null)
+  const benchRef = useRef<HTMLDivElement>(null)
   const navTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   const panRef = useRef(pan)
@@ -296,9 +296,9 @@ export function SteerComponent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canvasEl])
 
-  /** Client point → stage-relative fractions (may exceed 0..1 off-component). */
-  const stageRel = (clientX: number, clientY: number) => {
-    const rect = stageRef.current!.getBoundingClientRect()
+  /** Client point → bench-relative fractions (may exceed 0..1 off-component). */
+  const benchRel = (clientX: number, clientY: number) => {
+    const rect = benchRef.current!.getBoundingClientRect()
     return {
       x: (clientX - rect.left) / rect.width,
       y: (clientY - rect.top) / rect.height,
@@ -307,7 +307,7 @@ export function SteerComponent() {
 
   /** Notes can land on the component or the empty canvas, never on chrome. */
   const isNotable = (t: HTMLElement) =>
-    t.hasAttribute("data-canvas-bg") || (stageRef.current?.contains(t) ?? false)
+    t.hasAttribute("data-canvas-bg") || (benchRef.current?.contains(t) ?? false)
 
   // --- notes state ---------------------------------------------------------
 
@@ -359,18 +359,18 @@ export function SteerComponent() {
     // Note mode: click drops a pin, drag highlights a region. Anywhere on
     // the canvas counts; floating chrome does not.
     if (noteMode) {
-      if (!stageRef.current || pending || !isNotable(target)) return
+      if (!benchRef.current || pending || !isNotable(target)) return
       e.preventDefault()
       const startClientX = e.clientX
       const startClientY = e.clientY
-      const start = stageRel(e.clientX, e.clientY)
+      const start = benchRel(e.clientX, e.clientY)
       let dragged = false
       let region: { x: number; y: number; w: number; h: number } | undefined
       const move = (ev: PointerEvent) => {
         if (Math.abs(ev.clientX - startClientX) + Math.abs(ev.clientY - startClientY) > 6) {
           dragged = true
         }
-        const cur = stageRel(ev.clientX, ev.clientY)
+        const cur = benchRel(ev.clientX, ev.clientY)
         if (!dragged) {
           setHoverPin(cur)
           return
@@ -388,11 +388,11 @@ export function SteerComponent() {
       const up = (ev: PointerEvent) => {
         window.removeEventListener("pointermove", move)
         window.removeEventListener("pointerup", up)
-        const cur = stageRel(ev.clientX, ev.clientY)
+        const cur = benchRel(ev.clientX, ev.clientY)
         const upTarget = ev.target as HTMLElement
         const selector =
-          stageRef.current && stageRef.current.contains(upTarget)
-            ? selectorWithin(stageRef.current, upTarget)
+          benchRef.current && benchRef.current.contains(upTarget)
+            ? selectorWithin(benchRef.current, upTarget)
             : "(canvas)"
         const rect = dragged ? region : undefined
         setPending({
@@ -502,7 +502,7 @@ export function SteerComponent() {
       let moved = false
       const move = (ev: PointerEvent) => {
         moved = true
-        const cur = stageRel(ev.clientX, ev.clientY)
+        const cur = benchRel(ev.clientX, ev.clientY)
         const nextRect = {
           x: Math.min(anchor.x, cur.x),
           y: Math.min(anchor.y, cur.y),
@@ -551,8 +551,8 @@ export function SteerComponent() {
     let moved = false
     const move = (ev: PointerEvent) => {
       if (Math.abs(ev.clientX - startX) + Math.abs(ev.clientY - startY) > 4) moved = true
-      if (!moved || !stageRef.current) return
-      const rect = stageRef.current.getBoundingClientRect()
+      if (!moved || !benchRef.current) return
+      const rect = benchRef.current.getBoundingClientRect()
       const dx = (ev.clientX - startX) / rect.width
       const dy = (ev.clientY - startY) / rect.height
       setPinOverride((prev) => ({
@@ -592,12 +592,12 @@ export function SteerComponent() {
   // --- note actions --------------------------------------------------------
 
   const handleCanvasMouseMove = (e: React.MouseEvent) => {
-    if (!noteMode || pending || !stageRef.current) return
+    if (!noteMode || pending || !benchRef.current) return
     if (!isNotable(e.target as HTMLElement)) {
       setHoverPin(undefined)
       return
     }
-    setHoverPin(stageRel(e.clientX, e.clientY))
+    setHoverPin(benchRel(e.clientX, e.clientY))
   }
 
   const submitNote = async () => {
@@ -659,7 +659,7 @@ export function SteerComponent() {
   if (!spec) {
     return <p className="p-10 font-mono text-base text-zinc-400">no component "{slug}"</p>
   }
-  const stageComponent = resolveComponent(spec.name, spec.target)
+  const benchComponent = resolveComponent(spec.name, spec.target)
   const liveRegion = regionDrag ?? pending?.rect
 
   return (
@@ -695,11 +695,11 @@ export function SteerComponent() {
       >
         <div
           className="absolute w-max -translate-x-1/2 -translate-y-1/2"
-          ref={stageRef}
-          data-steer-stage={spec.slug}
+          ref={benchRef}
+          data-steer-bench={spec.slug}
           data-steer-state={currentUrl}
         >
-          {stageComponent && createElement(stageComponent, componentProps)}
+          {benchComponent && createElement(benchComponent, componentProps)}
 
           {/* live region marquee while dragging a highlight */}
           {liveRegion && (
@@ -926,7 +926,7 @@ export function SteerComponent() {
           data-steer-back=""
         >
           <ArrowLeft size={18} strokeWidth={1.75} />
-          steer
+          bench
         </Link>
         <span className="text-zinc-300">/</span>
         <span className="font-mono text-base font-semibold text-zinc-900">{spec.name}</span>

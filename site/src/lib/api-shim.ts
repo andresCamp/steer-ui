@@ -1,4 +1,5 @@
 import type { SteerNote } from "../../../src/core/model"
+import { migrateNotes } from "../../../src/core/notes"
 
 /**
  * The steer API, without a dev server behind it.
@@ -64,7 +65,7 @@ export function installApiShim() {
       write(map)
     }
 
-    const notes = () => read()[slug] ?? []
+    const notes = () => migrateNotes(read()[slug] ?? [])
     const save = (next: SteerNote[]) => {
       const m = read()
       m[slug] = next

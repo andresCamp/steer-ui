@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest"
 import type { SteerNote } from "./model"
-import { createNote, moveNoteById, replyToNoteById, resolveNoteById, type NoteContext } from "./notes"
+import {
+  SURFACE_SELECTOR,
+  createNote,
+  migrateNotes,
+  moveNoteById,
+  replyToNoteById,
+  resolveNoteById,
+  type NoteContext,
+} from "./notes"
 
 const ctx = (): NoteContext => {
   let clock = 0
@@ -79,5 +87,21 @@ describe("note transitions (invariant 3: append-preserving)", () => {
     moveNoteById(notes, "note_1", { x: 0, y: 0 })
     replyToNoteById(notes, "note_1", { text: "x", author: "a" }, ctx())
     expect(JSON.stringify(notes)).toBe(frozen)
+  })
+})
+
+describe("backfill of the pre-bench vocabulary", () => {
+  it("rewrites the legacy surface selector and leaves every other note alone", () => {
+    const notes = seed()
+    const legacy: SteerNote[] = [...notes, { ...notes[0], id: "note_2", selector: "(stage)" }]
+    const migrated = migrateNotes(legacy)
+    expect(migrated[1].selector).toBe(SURFACE_SELECTOR)
+    expect(migrated[0]).toEqual(legacy[0])
+    expect(JSON.stringify(legacy[1].selector)).toBe('"(stage)"')
+  })
+
+  it("is a no-op on notes already written in today's terms", () => {
+    const notes = seed()
+    expect(migrateNotes(notes)).toEqual(notes)
   })
 })

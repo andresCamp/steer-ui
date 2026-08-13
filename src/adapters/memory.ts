@@ -7,6 +7,7 @@ import type {
   SourceStore,
 } from "../ports"
 import type { SteerManifest, SteerNote, SourceFile } from "../core/model"
+import { migrateNotes } from "../core/notes"
 
 // In-memory implementations of every port: steer and test fuel. Each store
 // exposes inspection helpers so tests read state without side channels.
@@ -47,7 +48,7 @@ export function memoryFixtures(fixtures: Record<string, string> = {}) {
 export function memoryNotes(initial: Record<string, SteerNote[]> = {}) {
   const notes: Record<string, SteerNote[]> = { ...initial }
   const store: NoteStore & { all(): Record<string, SteerNote[]> } = {
-    read: async (slug) => notes[slug] ?? [],
+    read: async (slug) => migrateNotes(notes[slug] ?? []),
     write: async (slug, next) => {
       notes[slug] = next
     },

@@ -5,6 +5,23 @@ import type { SteerNote, NoteInput } from "./model"
 // and resolution is a status flip (invariant 3). Time and identity are
 // injected so every transition is deterministic under test.
 
+/** The selector a note carries when it landed on the bench, not an element. */
+export const SURFACE_SELECTOR = "(bench)"
+
+/** What that selector was called before the surface was named "bench". */
+const LEGACY_SURFACE_SELECTOR = "(stage)"
+
+/**
+ * Read-time backfill for notes written under the old vocabulary. Stores call
+ * this on the way out, so a repo whose .steer/notes predate the rename reads
+ * back in today's terms without a migration step the host has to run.
+ */
+export function migrateNotes(notes: SteerNote[]): SteerNote[] {
+  return notes.map((n) =>
+    n.selector === LEGACY_SURFACE_SELECTOR ? { ...n, selector: SURFACE_SELECTOR } : n
+  )
+}
+
 export interface NoteContext {
   now(): string
   id(prefix: string): string

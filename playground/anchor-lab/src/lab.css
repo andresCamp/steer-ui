@@ -53,8 +53,8 @@ body {
 }
 .run:hover { filter: brightness(1.08); }
 
-/* ---------------------------------------------------------------- stage */
-.stage { position: relative; }
+/* ---------------------------------------------------------------- bench */
+.bench { position: relative; }
 .pins { position: absolute; inset: 0; pointer-events: none; }
 
 .pin {

@@ -1,4 +1,5 @@
 import type { SteerFixture, SteerManifest, SteerNote, DoctorReport } from "../core/model"
+import { SURFACE_SELECTOR } from "../core/notes"
 
 // Framework-neutral browser client: the HTTP API calls and the DOM selector
 // builder every render surface shares. No framework imports here; the
@@ -58,11 +59,11 @@ export const resolveNote = (slug: string, id: string): Promise<SteerNote> =>
     body: JSON.stringify({ id }),
   }).then((r) => r.json())
 
-/** Build a CSS selector for an element, scoped to the steer stage. */
-export function selectorWithin(stage: HTMLElement, target: HTMLElement): string {
+/** Build a CSS selector for an element, scoped to the steer bench. */
+export function selectorWithin(bench: HTMLElement, target: HTMLElement): string {
   const parts: string[] = []
   let el: HTMLElement | null = target
-  while (el && el !== stage) {
+  while (el && el !== bench) {
     const tag = el.tagName.toLowerCase()
     const parent: HTMLElement | null = el.parentElement
     let part = tag
@@ -75,5 +76,5 @@ export function selectorWithin(stage: HTMLElement, target: HTMLElement): string 
     parts.unshift(part)
     el = parent
   }
-  return parts.join(" > ") || "(stage)"
+  return parts.join(" > ") || SURFACE_SELECTOR
 }

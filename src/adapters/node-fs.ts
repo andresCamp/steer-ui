@@ -3,6 +3,7 @@ import { existsSync, mkdirSync } from "node:fs"
 import path from "node:path"
 import type { FixtureStore, ManifestStore, NoteStore, SourceStore } from "../ports"
 import type { SteerManifest, SteerNote, SourceFile } from "../core/model"
+import { migrateNotes } from "../core/notes"
 
 // Filesystem adapters: the real stores behind a host's .steer/ directory
 // and source tree. Everything the pure core needs, nothing more.
@@ -100,7 +101,10 @@ export function fsNotes(root: string): NoteStore {
   return {
     read: async (slug) => {
       try {
-        return JSON.parse(await fs.readFile(path.join(dir, `${slug}.json`), "utf8")) as SteerNote[]
+        const raw = JSON.parse(
+          await fs.readFile(path.join(dir, `${slug}.json`), "utf8")
+        ) as SteerNote[]
+        return migrateNotes(raw)
       } catch {
         return []
       }

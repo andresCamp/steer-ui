@@ -11,6 +11,8 @@ export interface NoteThreadProps {
   createdLabel?: string
   text?: string
   replies?: NoteReplyView[]
+  /** An answer is coming but has not started arriving yet. */
+  thinking?: boolean
   replyValue?: string
   onResolve?: () => void
   onReplyInput?: (value: string) => void
@@ -60,6 +62,21 @@ export function NoteThread(props: NoteThreadProps) {
               </div>
             )}
           </For>
+        </div>
+      </Show>
+      <Show when={p.thinking}>
+        <div class="mt-3 flex items-center gap-2 border-t border-black/[0.05] pt-3">
+          <span class="font-mono text-base text-indigo-500">agent</span>
+          <span class="flex items-center gap-1">
+            <For each={[0, 160, 320]}>
+              {(delay) => (
+                <span
+                  class="h-1.5 w-1.5 animate-pulse rounded-full bg-indigo-400"
+                  style={{ "animation-delay": `${delay}ms`, "animation-duration": "1.1s" }}
+                />
+              )}
+            </For>
+          </span>
         </div>
       </Show>
       <input

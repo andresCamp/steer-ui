@@ -198,7 +198,7 @@ export function SteerComponent() {
   const [navigating, setNavigating] = createSignal(false)
   const [animating, setAnimating] = createSignal(false)
   let canvasRef: HTMLDivElement | undefined
-  let stageRef: HTMLDivElement | undefined
+  let benchRef: HTMLDivElement | undefined
   let trackRef: HTMLDivElement | undefined
   let navTimer: ReturnType<typeof setTimeout> | undefined
   let dragMoved = false
@@ -263,9 +263,9 @@ export function SteerComponent() {
     onCleanup(() => el.removeEventListener("wheel", onWheel))
   }
 
-  /** Client point → stage-relative fractions (may exceed 0..1 off-component). */
-  const stageRel = (clientX: number, clientY: number) => {
-    const rect = stageRef!.getBoundingClientRect()
+  /** Client point → bench-relative fractions (may exceed 0..1 off-component). */
+  const benchRel = (clientX: number, clientY: number) => {
+    const rect = benchRef!.getBoundingClientRect()
     return {
       x: (clientX - rect.left) / rect.width,
       y: (clientY - rect.top) / rect.height,
@@ -274,7 +274,7 @@ export function SteerComponent() {
 
   /** Notes can land on the component or the empty canvas, never on chrome. */
   const isNotable = (t: HTMLElement) =>
-    t.hasAttribute("data-canvas-bg") || (stageRef?.contains(t) ?? false)
+    t.hasAttribute("data-canvas-bg") || (benchRef?.contains(t) ?? false)
 
   const onPointerDown = (e: PointerEvent) => {
     const target = e.target as HTMLElement
@@ -282,17 +282,17 @@ export function SteerComponent() {
     // Note mode: click drops a pin, drag highlights a region. Anywhere on
     // the canvas counts; floating chrome does not.
     if (noteMode()) {
-      if (!stageRef || pending() || !isNotable(target)) return
+      if (!benchRef || pending() || !isNotable(target)) return
       e.preventDefault()
       const startClientX = e.clientX
       const startClientY = e.clientY
-      const start = stageRel(e.clientX, e.clientY)
+      const start = benchRel(e.clientX, e.clientY)
       let dragged = false
       const move = (ev: PointerEvent) => {
         if (Math.abs(ev.clientX - startClientX) + Math.abs(ev.clientY - startClientY) > 6) {
           dragged = true
         }
-        const cur = stageRel(ev.clientX, ev.clientY)
+        const cur = benchRel(ev.clientX, ev.clientY)
         if (!dragged) {
           setHoverPin(cur)
           return
@@ -310,11 +310,11 @@ export function SteerComponent() {
       const up = (ev: PointerEvent) => {
         window.removeEventListener("pointermove", move)
         window.removeEventListener("pointerup", up)
-        const cur = stageRel(ev.clientX, ev.clientY)
+        const cur = benchRel(ev.clientX, ev.clientY)
         const upTarget = ev.target as HTMLElement
         const selector =
-          stageRef && stageRef.contains(upTarget)
-            ? selectorWithin(stageRef, upTarget)
+          benchRef && benchRef.contains(upTarget)
+            ? selectorWithin(benchRef, upTarget)
             : "(canvas)"
         const region = dragged ? regionDrag() : undefined
         setPending({
@@ -428,14 +428,14 @@ export function SteerComponent() {
     if (override) return override
     // Live-app notes store element-box fractions and a page selector.
     // Map them onto the specimen root so the pin sits on the component.
-    if (note.selector.startsWith("html") && stageRef) {
-      const target = (stageRef.firstElementChild as HTMLElement | null) ?? stageRef
-      const stage = stageRef.getBoundingClientRect()
+    if (note.selector.startsWith("html") && benchRef) {
+      const target = (benchRef.firstElementChild as HTMLElement | null) ?? benchRef
+      const bench = benchRef.getBoundingClientRect()
       const box = target.getBoundingClientRect()
-      if (stage.width && stage.height) {
+      if (bench.width && bench.height) {
         return {
-          x: (box.left - stage.left + note.coords.x * box.width) / stage.width,
-          y: (box.top - stage.top + note.coords.y * box.height) / stage.height,
+          x: (box.left - bench.left + note.coords.x * box.width) / bench.width,
+          y: (box.top - bench.top + note.coords.y * box.height) / bench.height,
         }
       }
     }
@@ -456,7 +456,7 @@ export function SteerComponent() {
     let moved = false
     const move = (ev: PointerEvent) => {
       moved = true
-      const cur = stageRel(ev.clientX, ev.clientY)
+      const cur = benchRel(ev.clientX, ev.clientY)
       const nextRect = {
         x: Math.min(anchor.x, cur.x),
         y: Math.min(anchor.y, cur.y),
@@ -491,8 +491,12 @@ export function SteerComponent() {
     window.addEventListener("pointerup", up)
   }
 
-  /** Drag a whole note (pin and its region move together) from either handle. */
-  const onNoteDrag = (note: SteerNote) => (e: PointerEvent) => {
+  /**
+   * Drag a whole note (pin and its region move together) from either handle.
+   * Grabbing the region body hands the pin to the cursor: the corner perch is
+   * only where a pin starts life, not somewhere it has to stay.
+   */
+  const onNoteDrag = (note: SteerNote, fromRegion = false) => (e: PointerEvent) => {
     // While composing a note, existing pins are inert: the click falls
     // through to the canvas and places the new note instead.
     if (noteMode()) return
@@ -505,14 +509,16 @@ export function SteerComponent() {
     let moved = false
     const move = (ev: PointerEvent) => {
       if (Math.abs(ev.clientX - startX) + Math.abs(ev.clientY - startY) > 4) moved = true
-      if (!moved || !stageRef) return
-      const rect = stageRef.getBoundingClientRect()
+      if (!moved || !benchRef) return
+      const rect = benchRef.getBoundingClientRect()
       const dx = (ev.clientX - startX) / rect.width
       const dy = (ev.clientY - startY) / rect.height
       setPinOverride((prev) => ({
         ...prev,
         [note.id]: {
-          coords: { x: origCoords.x + dx, y: origCoords.y + dy },
+          coords: fromRegion
+            ? benchRel(ev.clientX, ev.clientY)
+            : { x: origCoords.x + dx, y: origCoords.y + dy },
           rect: origRect ? { ...origRect, x: origRect.x + dx, y: origRect.y + dy } : undefined,
         },
       }))
@@ -561,12 +567,12 @@ export function SteerComponent() {
   >()
 
   const handleCanvasMouseMove = (e: MouseEvent) => {
-    if (!noteMode() || pending() || !stageRef) return
+    if (!noteMode() || pending() || !benchRef) return
     if (!isNotable(e.target as HTMLElement)) {
       setHoverPin(undefined)
       return
     }
-    setHoverPin(stageRel(e.clientX, e.clientY))
+    setHoverPin(benchRel(e.clientX, e.clientY))
   }
 
   const submitNote = async () => {
@@ -676,8 +682,8 @@ export function SteerComponent() {
             >
               <div
                 class="absolute w-max -translate-x-1/2 -translate-y-1/2"
-                ref={stageRef}
-                data-steer-stage={s().slug}
+                ref={benchRef}
+                data-steer-bench={s().slug}
                 data-steer-state={currentUrl()}
               >
                 <Dynamic component={resolveComponent(s().name, s().target)} {...componentProps()} />
@@ -734,7 +740,7 @@ export function SteerComponent() {
                             <Region
                               open={openPin() === note.id}
                               inert={noteMode()}
-                              onPointerDown={onNoteDrag(note)}
+                              onPointerDown={onNoteDrag(note, true)}
                               onResize={(cx, cy, e) => onRegionResize(note, cx, cy)(e)}
                             />
                           </div>
@@ -833,7 +839,7 @@ export function SteerComponent() {
                 data-steer-back
               >
                 <ArrowLeft size={18} stroke-width={1.75} />
-                steer
+                bench
               </A>
               <span class="text-zinc-300">/</span>
               <span class="font-mono text-base font-semibold text-zinc-900">{s().name}</span>

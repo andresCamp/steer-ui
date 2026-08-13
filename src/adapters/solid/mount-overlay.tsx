@@ -1,6 +1,6 @@
 import { For, Show, createResource, createSignal, onCleanup, onMount } from "solid-js"
 import { render } from "solid-js/web"
-import { fetchNotes, postNote, replyNote, resolveNote, selectorWithin } from "../client"
+import { fetchNotes, moveNote, postNote, replyNote, resolveNote, selectorWithin } from "../client"
 import type { SteerNote } from "../../core/model"
 import { parseStateUrl } from "../../core/state-url"
 import { STEER_COMPONENT_ATTR, STEER_PROPS_ATTR, slugFromComponentName } from "../stamp-attr"
@@ -80,6 +80,8 @@ function OverlayApp() {
   const [draft, setDraft] = createSignal("")
   const [openPin, setOpenPin] = createSignal<string | undefined>()
   const [reply, setReply] = createSignal("")
+  // Pins held by the cursor, in client space, keyed by note id.
+  const [dragging, setDragging] = createSignal<Record<string, { x: number; y: number }>>({})
 
   const band = () => bandOf(width()).id
   const openNotes = () => (notes() ?? []).filter((n) => n.status === "open")
@@ -100,15 +102,22 @@ function OverlayApp() {
     }
   }
 
-  const pinAt = (n: SteerNote) => {
-    let el: Element | null = null
-    if (n.selector && !n.selector.startsWith("(")) {
-      try {
-        el = document.querySelector(n.selector)
-      } catch {
-        el = null
-      }
+  /** The element a note hangs off, when its selector still resolves. */
+  const anchorOf = (n: SteerNote): Element | null => {
+    if (!n.selector || n.selector.startsWith("(")) return null
+    try {
+      return document.querySelector(n.selector)
+    } catch {
+      return null
     }
+  }
+
+  const pinAt = (n: SteerNote) => {
+    // Mid-drag the pin lives in client space, so it tracks the cursor exactly
+    // instead of round-tripping through its anchor's fractions every frame.
+    const held = dragging()[n.id]
+    if (held) return held
+    const el = anchorOf(n)
     if (el) {
       const box = el.getBoundingClientRect()
       return {
@@ -117,6 +126,61 @@ function OverlayApp() {
       }
     }
     return { x: n.coords.x * width(), y: n.coords.y * window.innerHeight }
+  }
+
+  /** Client point → the fractions of its anchor that pinAt reads back. */
+  const coordsAt = (n: SteerNote, at: { x: number; y: number }) => {
+    const el = anchorOf(n)
+    if (el) {
+      const box = el.getBoundingClientRect()
+      return {
+        x: box.width ? (at.x - box.left) / box.width : 0.5,
+        y: box.height ? (at.y - box.top) / box.height : 0.5,
+      }
+    }
+    return { x: at.x / width(), y: at.y / window.innerHeight }
+  }
+
+  /**
+   * Drag a pin to re-place it. A press that never travels is still a click:
+   * it opens the thread. Anything past the threshold moves the note and
+   * commits the new coords to the note file.
+   */
+  const onPinDrag = (n: SteerNote) => (e: PointerEvent) => {
+    e.stopPropagation()
+    // While composing, pins are inert — the press belongs to the new note.
+    if (noteMode()) return
+    e.preventDefault()
+    const start = pinAt(n)
+    const sx = e.clientX
+    const sy = e.clientY
+    let moved = false
+    const move = (ev: PointerEvent) => {
+      if (!moved && Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) <= 4) return
+      moved = true
+      setDragging((prev) => ({
+        ...prev,
+        [n.id]: { x: start.x + (ev.clientX - sx), y: start.y + (ev.clientY - sy) },
+      }))
+    }
+    const up = async () => {
+      window.removeEventListener("pointermove", move)
+      window.removeEventListener("pointerup", up)
+      const at = dragging()[n.id]
+      if (!moved || !at) {
+        setOpenPin(openPin() === n.id ? undefined : n.id)
+        return
+      }
+      const saved = await moveNote(n.component || pageSlug(), n.id, coordsAt(n, at))
+      mutate((prev) => (prev ?? []).map((x) => (x.id === n.id ? saved : x)))
+      setDragging((prev) => {
+        const next = { ...prev }
+        delete next[n.id]
+        return next
+      })
+    }
+    window.addEventListener("pointermove", move)
+    window.addEventListener("pointerup", up)
   }
 
   const onResize = () => setWidth(window.innerWidth)
@@ -232,10 +296,7 @@ function OverlayApp() {
                   label={String(i() + 1)}
                   author={n.author === "agent" ? "agent" : "human"}
                   matchesState={noteMatches(n)}
-                  onPointerDown={(e) => {
-                    e.stopPropagation()
-                    setOpenPin(openPin() === n.id ? undefined : n.id)
-                  }}
+                  onPointerDown={onPinDrag(n)}
                 />
                 <Show when={openPin() === n.id && noteMatches(n)}>
                   <div class="absolute bottom-9 left-0 z-20">

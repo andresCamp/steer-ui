@@ -30,7 +30,7 @@ The five verbs an agent needs, which the whole design serves: enumerate (manifes
 1. **Manifest**: components with `name`, `slug`, `file`, `props` (kind: enum/boolean/string/number/children/unsupported, with `options`, `numeric`, JSDoc `description`), `usages` (file:line, `internal` flag), `target` for compounds, top-level `warnings`. Served at `GET /__steer/api/manifest`.
 2. **State URL grammar**: `/__steer/<slug>?prop=value&...`. Every knob configuration is addressable. Composed children serialize as JSON strings in the query.
 3. **Fixtures**: `{ states: { name: { prop: value } } }` where value is a string or a nestable `{ "$component": "Name", "props": {...}, "children": ... }` ref. This beats Storybook's hard limitation (JSX children cannot be URL/controls-serialized there).
-4. **Notes**: `{ id, component, stateUrl, selector, coords, rect?, text, author, status, created, replies[] }`. Coords/rect are stage-relative fractions and may exceed 0..1 (canvas notes). API: GET/POST `/__steer/api/notes/<slug>`, POST `.../move`, `.../resolve`, `.../reply`.
+4. **Notes**: `{ id, component, stateUrl, selector, coords, rect?, text, author, status, created, replies[] }`. Coords/rect are bench-relative fractions and may exceed 0..1 (canvas notes). API: GET/POST `/__steer/api/notes/<slug>`, POST `.../move`, `.../resolve`, `.../reply`.
 5. **Agent protocol** (drafted in README "Agent protocol" section): read open notes before touching a component, reproduce via `stateUrl`, reply as `author: "agent"` (renders indigo), resolve only what you fixed in the same change. Notes scoping is hybrid: pins render full in their own state, dimmed elsewhere; clicking a dim pin navigates to its state.
 
 ## Hard-won gotchas (each cost real debugging)

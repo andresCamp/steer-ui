@@ -1,14 +1,14 @@
 import { createSignal, onCleanup, onMount, For, Show } from "solid-js"
-import { AddNote } from "../../../src/adapters/solid/chrome/AddNote"
+import { LandingPeek } from "../components/LandingPeek"
 import { GhostPin } from "../../../src/adapters/solid/chrome/GhostPin"
 import { Pin } from "../../../src/adapters/solid/chrome/Pin"
 import { NoteThread } from "../../../src/adapters/solid/chrome/NoteThread"
 import type { SteerNote } from "../../../src/core/model"
 
 /**
- * Note mode on the marketing page itself, using the product's own pill, ghost
- * pin, pins and threads. Notes go to localStorage here; in a real host they
- * are JSON files in the repo.
+ * Note mode on the marketing page itself, using the product's own ghost pin,
+ * pins and threads under the landing page's own peek. Notes go to
+ * localStorage here; in a real host they are JSON files in the repo.
  */
 
 const KEY = "steerui:page-notes"
@@ -36,12 +36,17 @@ function ago(iso: string): string {
 export default function PageNotes() {
   const [notes, setNotes] = createSignal<SteerNote[]>([])
   const [noteMode, setNoteMode] = createSignal(false)
+  const [width, setWidth] = createSignal(1280)
   const [ghost, setGhost] = createSignal<{ x: number; y: number } | null>(null)
   const [draft, setDraft] = createSignal<{ x: number; y: number; selector: string } | null>(null)
   const [text, setText] = createSignal("")
   const [open, setOpen] = createSignal<string | null>(null)
+  // Pins held by the cursor, in page space, keyed by note id.
+  const [dragging, setDragging] = createSignal<Record<string, { x: number; y: number }>>({})
 
   let input: HTMLInputElement | undefined
+
+  const openNotes = () => notes().filter((n) => n.status === "open")
 
   const persist = (next: SteerNote[]) => {
     setNotes(next)
@@ -59,18 +64,24 @@ export default function PageNotes() {
   }
   const arm = () => {
     setNoteMode(true)
+    setOpen(null)
     document.body.classList.add("no-cursor")
   }
 
   onMount(() => {
     setNotes(load())
+    setWidth(window.innerWidth)
 
+    // Pins are stored as fractions of the viewport, so they need the live
+    // width to land in the right place after a resize.
+    const onResize = () => setWidth(window.innerWidth)
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null
       const typing = t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA")
       if (e.key === "Escape") {
         setDraft(null)
         setText("")
+        setOpen(null)
         disarm()
         return
       }
@@ -95,10 +106,12 @@ export default function PageNotes() {
       queueMicrotask(() => input?.focus())
     }
 
+    window.addEventListener("resize", onResize)
     document.addEventListener("keydown", onKey)
     document.addEventListener("mousemove", onMove)
     document.addEventListener("click", onClick, true)
     onCleanup(() => {
+      window.removeEventListener("resize", onResize)
       document.removeEventListener("keydown", onKey)
       document.removeEventListener("mousemove", onMove)
       document.removeEventListener("click", onClick, true)
@@ -131,23 +144,69 @@ export default function PageNotes() {
   const resolve = (id: string) =>
     persist(notes().map((n) => (n.id === id ? { ...n, status: "resolved" as const } : n)))
 
+  const pinAt = (n: SteerNote) =>
+    dragging()[n.id] ?? { x: n.coords.x * width(), y: n.coords.y * window.innerHeight }
+
+  /**
+   * Drag a pin to re-place it. A press that never travels is still a click:
+   * it opens the thread. Anything past the threshold moves the note.
+   */
+  const onPinDrag = (n: SteerNote) => (e: PointerEvent) => {
+    if (noteMode()) return
+    e.preventDefault()
+    const start = pinAt(n)
+    const sx = e.pageX
+    const sy = e.pageY
+    let moved = false
+    const move = (ev: PointerEvent) => {
+      if (!moved && Math.abs(ev.pageX - sx) + Math.abs(ev.pageY - sy) <= 4) return
+      moved = true
+      setDragging((prev) => ({
+        ...prev,
+        [n.id]: { x: start.x + (ev.pageX - sx), y: start.y + (ev.pageY - sy) },
+      }))
+    }
+    const up = () => {
+      window.removeEventListener("pointermove", move)
+      window.removeEventListener("pointerup", up)
+      const at = dragging()[n.id]
+      if (!moved || !at) {
+        setOpen(open() === n.id ? null : n.id)
+        return
+      }
+      persist(
+        notes().map((x) =>
+          x.id === n.id
+            ? { ...x, coords: { x: at.x / width(), y: at.y / window.innerHeight } }
+            : x,
+        ),
+      )
+      setDragging((prev) => {
+        const next = { ...prev }
+        delete next[n.id]
+        return next
+      })
+    }
+    window.addEventListener("pointermove", move)
+    window.addEventListener("pointerup", up)
+  }
+
   return (
     <>
       <div class="pointer-events-none absolute inset-0 z-40">
-        <For each={notes()}>
+        <For each={openNotes()}>
           {(n, i) => (
             <span
               class="pointer-events-auto absolute"
-              style={{ left: `${n.coords.x * window.innerWidth}px`, top: `${n.coords.y * window.innerHeight}px` }}
+              style={{ left: `${pinAt(n).x}px`, top: `${pinAt(n).y}px` }}
             >
               <Pin
                 label={String(i() + 1)}
                 author={n.author === "agent" ? "agent" : "human"}
-                matchesState={n.status === "open"}
-                onPointerDown={() => setOpen(open() === n.id ? null : n.id)}
+                onPointerDown={onPinDrag(n)}
               />
               <Show when={open() === n.id}>
-                <div class="absolute left-9 top-0">
+                <div class="note-opaque absolute left-9 top-0">
                   <NoteThread
                     author={n.author}
                     createdLabel={ago(n.created)}
@@ -163,7 +222,7 @@ export default function PageNotes() {
         <Show when={draft()}>
           {(d) => (
             <div
-              class="glass pointer-events-auto absolute w-80 rounded-2xl p-4"
+              class="glass note-opaque pointer-events-auto absolute w-80 rounded-2xl p-4"
               style={{ left: `${d().x}px`, top: `${d().y}px` }}
             >
               <div class="mb-2 font-mono text-base text-zinc-400">{d().selector}</div>
@@ -194,9 +253,12 @@ export default function PageNotes() {
         )}
       </Show>
 
-      <div class="absolute bottom-8 left-1/2 z-50 -translate-x-1/2">
-        <AddNote noteMode={noteMode()} onClick={() => (noteMode() ? disarm() : arm())} />
-      </div>
+      <LandingPeek
+        count={openNotes().length}
+        noteMode={noteMode()}
+        benchHref="/__steer"
+        onAddNote={() => (noteMode() ? disarm() : arm())}
+      />
     </>
   )
 }

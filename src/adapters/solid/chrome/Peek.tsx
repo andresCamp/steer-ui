@@ -55,7 +55,7 @@ export function Peek(props: PeekProps) {
     <div
       classList={{
         "flex justify-start": true,
-        "fixed left-4 z-[80]": docked(),
+        "pointer-events-none fixed inset-x-4 z-[80]": docked(),
         "bottom-0": peeking(),
         "bottom-4": docked() && p.expanded,
       }}
@@ -75,7 +75,7 @@ export function Peek(props: PeekProps) {
       >
         <button
           type="button"
-          class="flex h-10 cursor-pointer items-center gap-2 rounded-full px-3.5 font-mono text-base font-semibold text-zinc-700 tabular-nums hover:text-zinc-900"
+          class="flex h-10 shrink-0 cursor-pointer items-center gap-2 rounded-full px-3.5 font-mono text-base font-semibold text-zinc-700 tabular-nums hover:text-zinc-900"
           title={p.expanded ? "Collapse" : `${p.count} notes`}
           onClick={() => p.onToggle?.()}
           data-steer-peek
@@ -84,10 +84,10 @@ export function Peek(props: PeekProps) {
           {p.count}
         </button>
         <Show when={p.expanded}>
-          <span class="mx-0.5 h-5 w-px bg-black/10" />
+          <span class="mx-0.5 h-5 w-px shrink-0 bg-black/10" />
           <button
             type="button"
-            class={`flex h-10 cursor-pointer items-center gap-2 rounded-full px-3.5 text-base font-medium ${
+            class={`flex h-10 shrink-0 cursor-pointer items-center gap-2 rounded-full px-3.5 text-base font-medium ${
               p.noteMode
                 ? "bg-amber-400 text-white shadow-[0_4px_20px_rgba(217,119,6,0.4)]"
                 : "text-zinc-600 hover:text-zinc-900"
@@ -100,17 +100,17 @@ export function Peek(props: PeekProps) {
               <span class="col-start-1 row-start-1">{p.noteMode ? "Cancel" : "Add note"}</span>
             </span>
             <kbd
-              class={`rounded-md px-1.5 py-0.5 font-mono text-base ${
+              class={`rounded-md px-1.5 py-0.5 font-mono text-base max-[480px]:hidden ${
                 p.noteMode ? "bg-white/20 text-white" : "bg-black/[0.05] text-zinc-400"
               }`}
             >
               {p.noteMode ? "esc" : "C"}
             </kbd>
           </button>
-          <span class="mx-0.5 h-5 w-px bg-black/10" />
+          <span class="mx-0.5 h-5 w-px shrink-0 bg-black/10" />
           <button
             type="button"
-            class={`grid size-10 place-items-center rounded-full ${
+            class={`grid size-10 shrink-0 place-items-center rounded-full ${
               p.pinsVisible ? "text-zinc-600 hover:text-zinc-900" : "text-zinc-400 hover:text-zinc-700"
             }`}
             title={p.pinsVisible ? "Hide pins" : "Show pins"}
@@ -134,16 +134,16 @@ export function Peek(props: PeekProps) {
               </svg>
             </Show>
           </button>
-          <span class="mx-0.5 h-5 w-px bg-black/10" />
+          <span class="mx-0.5 h-5 w-px shrink-0 bg-black/10" />
           <div class="flex min-w-0 flex-col justify-center px-3 py-1 text-base leading-tight text-zinc-700 tabular-nums" title={split()}>
-            <span>
+            <span class="truncate">
               {p.width}px · {p.band}
             </span>
             <span class="text-zinc-500 max-[560px]:hidden">{split()}</span>
           </div>
-          <span class="mx-0.5 h-5 w-px bg-black/10" />
+          <span class="mx-0.5 h-5 w-px shrink-0 bg-black/10" />
           <a
-            class="grid size-10 place-items-center rounded-full text-zinc-600 hover:text-zinc-900"
+            class="grid size-10 shrink-0 place-items-center rounded-full text-zinc-600 hover:text-zinc-900"
             href={p.benchHref}
             rel="external"
             title="Open in bench"

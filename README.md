@@ -45,7 +45,7 @@ Imported or intersection prop types? Turn on `steer({ typecheck: true })` and th
 
 No special tooling: notes are JSON files plus a local HTTP API, both already agent-accessible.
 
-- Read notes: `.steer/notes/<slug>.json` (or `GET /__steer/api/notes/<slug>`). Each note has `stateUrl` (open it to reproduce), `selector`, `coords`/`rect` (stage-relative), `status`, and `replies`.
+- Read notes: `.steer/notes/<slug>.json` (or `GET /__steer/api/notes/<slug>`). Each note has `stateUrl` (open it to reproduce), `selector`, `coords`/`rect` (bench-relative), `status`, and `replies`.
 - Before and after working on a component, check its open notes. Reproduce via `stateUrl` with Playwright.
 - Reply to a note: `POST /__steer/api/notes/<slug>/reply` with `{ "id", "text", "author": "agent" }`.
 - Create a note: `POST /__steer/api/notes/<slug>` with `{ "stateUrl", "selector", "coords", "text", "author": "agent" }`.

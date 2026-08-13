@@ -7,5 +7,5 @@ registerComponents(
     string,
     Record<string, unknown>
   >,
-  { author: "andrés" },
+  { author: "andrés", appLabel: "steerui.com" },
 )

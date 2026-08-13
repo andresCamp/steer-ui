@@ -80,9 +80,9 @@ export interface SteerNote {
   component: string
   stateUrl: string
   selector: string
-  /** Stage-relative fractions; may exceed 0..1 for notes on the empty canvas. */
+  /** Bench-relative fractions; may exceed 0..1 for notes on the empty canvas. */
   coords: { x: number; y: number }
-  /** Optional highlighted region (stage-relative fractions, same coordinate space). */
+  /** Optional highlighted region (bench-relative fractions, same coordinate space). */
   rect?: { x: number; y: number; w: number; h: number }
   text: string
   author: string
