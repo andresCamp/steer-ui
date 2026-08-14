@@ -8,7 +8,7 @@ Stack recipes for instantiating steer-ui into a host. The lab is `~/onc9-systems
 - Framework: which Mounter does the host need? Solid, React, Vue and Svelte all ship one, plus a reader for their source (`.tsx` in core, `.vue` and `.svelte` in `adapters/extract/`). The bench is the same prebuilt chrome for every host. Vue is exercised end to end in the lab (`playground/vue-app`); Svelte is not, so expect to promote fixes back from the first Svelte host.
 - Component dir: where do reusable components live? (`src/components` default; anything else becomes the `componentDir` option.)
 - Router: nothing to add. The chrome bundles its own router and owns the `/__steer` document; it never touches the host's routing.
-- Styling: nothing to do. The chrome ships its own CSS, and the overlay's stylesheet deliberately omits Tailwind preflight so it cannot reset the host app's styles. The host's own stylesheet is loaded into the bench document so host components look the way they do in the app.
+- Styling: nothing to do. The chrome ships its own CSS. The overlay's stylesheet omits Tailwind's preflight so it cannot reset the host app's styles, carries a reset scoped to `#steer-overlay` so it still looks right in a host with no Tailwind, and declares Tailwind's canonical layer order (`theme, base, components, utilities`) so injecting it into the host's <head> cannot reorder the host's own layers. The host's stylesheet is loaded into the bench document so host components look as they do in the app.
 - Icons: nothing to install. They are bundled into the chrome.
 - Prop types imported from other modules or built from intersections? Turn on `typecheck: true` (costs a TS program per regeneration; worth it whenever knobs come back `unsupported`).
 

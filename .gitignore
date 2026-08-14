@@ -11,3 +11,4 @@ site/.astro/
 .wrangler
 .dev.vars*
 playground/vue-app/.steer/manifest.json
+playground/*/.vite

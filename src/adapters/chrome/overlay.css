@@ -2,10 +2,80 @@
    styles. Preflight is deliberately omitted: importing all of Tailwind here
    would reset the host app's typography, margins and borders out from under it.
    Theme and utilities only. */
+/*
+ * Declare Tailwind's canonical layer order BEFORE importing anything. CSS layer
+ * precedence is fixed by first declaration, and this stylesheet is injected
+ * into the host's <head> ahead of the host's own. Declaring only theme and
+ * utilities here would push the host's `base` layer to the END, so Tailwind's
+ * preflight would start overriding the host's own utilities: every text-xl and
+ * bg-red-600 in the host app silently stops working.
+ */
+@layer theme, base, components, utilities;
+
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities);
 @source "../../../src/adapters/solid";
 @source "../../../src/adapters/chrome";
+
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "SF Pro Text", "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
+}
+
+/*
+ * A scoped preflight. Tailwind's real preflight is deliberately not imported
+ * here, because it would reset the HOST app's typography and borders out from
+ * under it. But without SOME reset the overlay inherits the browser defaults
+ * and renders in Times with unstyled buttons, which is what a host that has no
+ * Tailwind of its own gets. So: reset only inside our own root, never outside.
+ */
+#steer-overlay,
+#steer-overlay *,
+#steer-overlay *::before,
+#steer-overlay *::after {
+  box-sizing: border-box;
+  border: 0 solid;
+}
+
+#steer-overlay {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  color: #18181b;
+}
+
+#steer-overlay h1,
+#steer-overlay h2,
+#steer-overlay h3,
+#steer-overlay p,
+#steer-overlay figure {
+  margin: 0;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+#steer-overlay button,
+#steer-overlay input,
+#steer-overlay textarea {
+  font: inherit;
+  color: inherit;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+}
+
+#steer-overlay button {
+  cursor: pointer;
+  text-transform: none;
+  appearance: button;
+}
+
+#steer-overlay :is(svg) {
+  display: block;
+  vertical-align: middle;
+}
 .glass {
   background: linear-gradient(
     135deg,

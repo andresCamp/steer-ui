@@ -92,7 +92,7 @@ host already runs the Svelte plugin.
 
 | Host | Notes |
 |---|---|
-| `playground/vue-app` (lab) | A real Vue 3 host on the prebuilt Solid chrome. Found three things unit tests could not: SFC default exports were not registered, the usage scan skipped SFC markup, and the chrome asset was served cacheable |
+| `playground/vue-app` (lab) | A real Vue 3 host on the prebuilt Solid chrome. Found five things unit tests could not: SFC default exports were not registered, the usage scan skipped SFC markup, the chrome asset was served cacheable, the playgrounds shared one Vite dep cache and overwrote each other, and the overlay stylesheet reordered the host's Tailwind layers so every host utility stopped applying |
 | (no external host yet) | First real application should pressure-test install + work + doctor + uninstall and feed corrections back into the playbooks |
 
 ## What a host actually compiles
