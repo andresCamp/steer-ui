@@ -11,5 +11,5 @@
     "lib": ["ES2022", "DOM"],
     "types": []
   },
-  "include": ["src/core/**/*", "src/ports/**/*", "src/adapters/memory.ts"]
+  "include": ["src/core/**/*", "src/ports/**/*", "src/adapters/memory.ts", "src/adapters/mount/**/*"]
 }

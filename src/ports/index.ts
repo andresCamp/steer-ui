@@ -74,3 +74,48 @@ export interface EngineDeps {
   ids?: Ids
   config?: { componentDir?: string; excludeDirs?: string[]; typecheck?: boolean }
 }
+
+// The browser port. The bench chrome is built once and is framework-free; a
+// host component can only be instantiated by its own framework's runtime, so
+// this is the single seam where a framework enters. Adding a framework to
+// steer-ui is one Mounter plus one Extractor, never another canvas.
+
+export interface MountHandle {
+  /**
+   * Replace the mounted component's props in place. Must NOT remount: knob
+   * edits would otherwise discard component state on every keystroke.
+   * Absent keys are removed, not merged.
+   */
+  update(props: Record<string, unknown>): void
+  /** Tear down and leave the element empty. Idempotent. */
+  destroy(): void
+}
+
+export interface Mounter {
+  /** Framework id, as recorded in the manifest and the install receipt. */
+  readonly id: string
+  mount(
+    el: HTMLElement,
+    Component: unknown,
+    props: Record<string, unknown>
+  ): MountHandle
+}
+
+// The bridge. Once the chrome ships prebuilt, it and the host's register entry
+// are two separate module graphs that cannot import each other: the chrome is
+// an opaque asset the host never compiles. They meet at this protocol instead,
+// published on a shared global. Load order is not guaranteed, so either side
+// may arrive first.
+
+export interface SteerRegistration {
+  /** Module namespaces from the host's glob, keyed by file path. */
+  modules: Record<string, Record<string, unknown>>
+  /** How this host's framework instantiates one of its components. */
+  mounter: Mounter
+  /** Default author recorded on notes written from this host. */
+  author?: string
+}
+
+export type PublishResult =
+  | { ok: true; queued: boolean }
+  | { ok: false; reason: "protocol-mismatch"; expected: number; found: number }
