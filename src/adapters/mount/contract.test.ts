@@ -3,16 +3,23 @@
  */
 import { createEffect, createRoot, type JSX } from "solid-js"
 import { act, createElement, useState as useReactState } from "react"
+import { h, nextTick } from "vue"
 import { describe, expect, it } from "vitest"
 import type { Mounter } from "../../ports"
 import { deferElement } from "../../core/registry"
 import { reactMounter } from "./react"
 import { solidMounter } from "./solid"
+import { vueMounter } from "./vue"
+import { svelteMounter } from "./svelte.svelte"
+import SvelteProbe from "./__probes__/SvelteProbe.svelte"
+import SvelteInner from "./__probes__/SvelteInner.svelte"
+import SvelteWrapper from "./__probes__/SvelteWrapper.svelte"
+import { flushSync } from "svelte"
 
-// One suite, every Mounter. This is the invariant that makes the single
-// prebuilt chrome possible: if a framework can satisfy this contract, the
-// bench can drive it without a canvas of its own. A new framework is
-// therefore a ~40 line file plus an entry in CASES, never another surface.
+// One suite, every Mounter. This is what makes the single prebuilt chrome
+// possible: a framework that satisfies these invariants can be driven by the
+// bench without a canvas of its own, so adding one is a small file plus an
+// entry in CASES rather than another 1000 line surface.
 
 declare global {
   // eslint-disable-next-line no-var
@@ -20,22 +27,24 @@ declare global {
 }
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
 
-type Flush = (fn: () => void) => void
+/** Frameworks schedule differently, so flushing is async for all of them. */
+type Flush = (fn: () => void) => Promise<void>
 
 interface Case {
   mounter: Mounter
   Probe: unknown
+  Wrapper: unknown
+  Inner: unknown
   flush: Flush
-  /** Runs fn inside this framework's ownership scope. element() creates the
-   *  instance under the current owner in Solid, so composing children outside
-   *  one would orphan its computations. */
+  /** Runs fn inside this framework's ownership scope. Solid creates instances
+   *  under the current owner, so composing outside one would orphan them. */
   owned: <T>(fn: () => T) => T
 }
 
-// Probes report the instance number they were created with. If update()
-// remounts instead of updating in place, data-instance changes and the
-// "does not remount" invariant fails. Each framework counts instantiation
-// its own way, which is the point: the contract is behavioural, not shared code.
+// Probes report the instance they were created with. If update() remounts
+// instead of updating in place, data-instance changes. Each framework counts
+// instantiation its own way, which is the point: the contract is behavioural,
+// not shared code.
 
 let solidInstances = 0
 function SolidProbe(props: Record<string, unknown>): JSX.Element {
@@ -48,23 +57,11 @@ function SolidProbe(props: Record<string, unknown>): JSX.Element {
   return el as unknown as JSX.Element
 }
 
-let reactInstances = 0
-function ReactProbe(props: Record<string, unknown>) {
-  const [instance] = useReactState(() => ++reactInstances)
-  return createElement(
-    "div",
-    { "data-instance": String(instance) },
-    typeof props.label === "string" ? props.label : ""
-  )
-}
-
-// Composed children: a component instance handed to another as a PROP value.
-// These probes are deliberately effect-free so element() can be called outside
-// a reactive owner in the test without creating an orphan computation.
-
 function SolidInner(props: Record<string, unknown>): JSX.Element {
   const el = document.createElement("em")
-  el.textContent = typeof props.label === "string" ? props.label : ""
+  createEffect(() => {
+    el.textContent = typeof props.label === "string" ? props.label : ""
+  })
   return el as unknown as JSX.Element
 }
 
@@ -80,6 +77,16 @@ function SolidWrapper(props: Record<string, unknown>): JSX.Element {
   return el as unknown as JSX.Element
 }
 
+let reactInstances = 0
+function ReactProbe(props: Record<string, unknown>) {
+  const [instance] = useReactState(() => ++reactInstances)
+  return createElement(
+    "div",
+    { "data-instance": String(instance) },
+    typeof props.label === "string" ? props.label : ""
+  )
+}
+
 function ReactInner(props: Record<string, unknown>) {
   return createElement("em", null, typeof props.label === "string" ? props.label : "")
 }
@@ -88,27 +95,67 @@ function ReactWrapper(props: Record<string, unknown>) {
   return createElement("section", null, props.children as never)
 }
 
-interface Composed {
-  Wrapper: unknown
-  Inner: unknown
+// Vue components are plain objects with a render function: no SFC, no compiler.
+// setup() runs once per instance, so the counter tracks mounts, not renders.
+let vueInstances = 0
+const VueProbe = {
+  props: { label: { type: String, default: "" } },
+  setup(props: { label: string }) {
+    const instance = ++vueInstances
+    return () => h("div", { "data-instance": String(instance) }, props.label)
+  },
 }
 
-const COMPOSED: Record<string, Composed> = {
-  solid: { Wrapper: SolidWrapper, Inner: SolidInner },
-  react: { Wrapper: ReactWrapper, Inner: ReactInner },
+const VueInner = {
+  props: { label: { type: String, default: "" } },
+  setup(props: { label: string }) {
+    return () => h("em", null, props.label)
+  },
+}
+
+const VueWrapper = {
+  setup(_props: unknown, { slots }: { slots: Record<string, (() => unknown) | undefined> }) {
+    return () => h("section", null, slots.default ? (slots.default() as never) : undefined)
+  },
 }
 
 const CASES: Record<string, Case> = {
   solid: {
     mounter: solidMounter,
     Probe: SolidProbe,
-    flush: (fn) => fn(),
+    Wrapper: SolidWrapper,
+    Inner: SolidInner,
+    flush: async (fn) => void fn(),
     owned: (fn) => createRoot(fn),
   },
   react: {
     mounter: reactMounter,
     Probe: ReactProbe,
-    flush: (fn) => act(fn),
+    Wrapper: ReactWrapper,
+    Inner: ReactInner,
+    flush: async (fn) => void act(fn),
+    owned: (fn) => fn(),
+  },
+  svelte: {
+    mounter: svelteMounter,
+    Probe: SvelteProbe,
+    Wrapper: SvelteWrapper,
+    Inner: SvelteInner,
+    flush: async (fn) => {
+      fn()
+      flushSync()
+    },
+    owned: (fn) => fn(),
+  },
+  vue: {
+    mounter: vueMounter,
+    Probe: VueProbe,
+    Wrapper: VueWrapper,
+    Inner: VueInner,
+    flush: async (fn) => {
+      fn()
+      await nextTick()
+    },
     owned: (fn) => fn(),
   },
 }
@@ -125,83 +172,82 @@ function probe(el: HTMLElement): HTMLElement {
   return found as HTMLElement
 }
 
-for (const [name, { mounter, Probe, flush, owned }] of Object.entries(CASES)) {
+for (const [name, { mounter, Probe, Wrapper, Inner, flush, owned }] of Object.entries(CASES)) {
   describe(`Mounter contract: ${name}`, () => {
     it("reports its framework id", () => {
       expect(mounter.id).toBe(name)
     })
 
-    it("renders the component with its initial props", () => {
+    it("renders the component with its initial props", async () => {
       const el = host()
-      flush(() => void mounter.mount(el, Probe, { label: "first" }))
+      await flush(() => void mounter.mount(el, Probe, { label: "first" }))
       expect(probe(el).textContent).toBe("first")
     })
 
-    it("update() changes the rendered output", () => {
+    it("update() changes the rendered output", async () => {
       const el = host()
       let handle!: ReturnType<Mounter["mount"]>
-      flush(() => {
+      await flush(() => {
         handle = mounter.mount(el, Probe, { label: "before" })
       })
-      flush(() => handle.update({ label: "after" }))
+      await flush(() => handle.update({ label: "after" }))
       expect(probe(el).textContent).toBe("after")
     })
 
     // The load-bearing invariant. Knob edits fire update() on every keystroke;
     // a remount would discard component state each time.
-    it("update() does not remount the component", () => {
+    it("update() does not remount the component", async () => {
       const el = host()
       let handle!: ReturnType<Mounter["mount"]>
-      flush(() => {
+      await flush(() => {
         handle = mounter.mount(el, Probe, { label: "a" })
       })
       const instance = probe(el).getAttribute("data-instance")
-      flush(() => handle.update({ label: "b" }))
-      flush(() => handle.update({ label: "c" }))
+      await flush(() => handle.update({ label: "b" }))
+      await flush(() => handle.update({ label: "c" }))
       expect(probe(el).getAttribute("data-instance")).toBe(instance)
       expect(probe(el).textContent).toBe("c")
     })
 
-    it("update() replaces props rather than merging them", () => {
+    it("update() replaces props rather than merging them", async () => {
       const el = host()
       let handle!: ReturnType<Mounter["mount"]>
-      flush(() => {
+      await flush(() => {
         handle = mounter.mount(el, Probe, { label: "present" })
       })
-      flush(() => handle.update({}))
+      await flush(() => handle.update({}))
       expect(probe(el).textContent).toBe("")
     })
 
-    it("destroy() empties the element", () => {
+    it("destroy() empties the element", async () => {
       const el = host()
       let handle!: ReturnType<Mounter["mount"]>
-      flush(() => {
+      await flush(() => {
         handle = mounter.mount(el, Probe, { label: "x" })
       })
-      flush(() => handle.destroy())
+      await flush(() => handle.destroy())
       expect(el.innerHTML).toBe("")
     })
 
-    it("destroy() is idempotent and update() after destroy is inert", () => {
+    it("destroy() is idempotent and update() after destroy is inert", async () => {
       const el = host()
       let handle!: ReturnType<Mounter["mount"]>
-      flush(() => {
+      await flush(() => {
         handle = mounter.mount(el, Probe, { label: "x" })
       })
-      flush(() => handle.destroy())
-      expect(() =>
+      await flush(() => handle.destroy())
+      await expect(
         flush(() => {
           handle.destroy()
           handle.update({ label: "zombie" })
         })
-      ).not.toThrow()
+      ).resolves.not.toThrow()
       expect(el.innerHTML).toBe("")
     })
 
-    it("element() produces a value usable as a prop (composed children)", () => {
-      const { Wrapper, Inner } = COMPOSED[name]!
+    it("element() produces a value usable as a prop (composed children)", async () => {
       const el = host()
-      owned(() =>
+      await owned(() =>
         flush(() =>
           void mounter.mount(el, Wrapper, {
             children: mounter.element(Inner, { label: "nested" }),
@@ -211,10 +257,9 @@ for (const [name, { mounter, Probe, flush, owned }] of Object.entries(CASES)) {
       expect(el.querySelector("section em")?.textContent).toBe("nested")
     })
 
-    it("element() nests recursively", () => {
-      const { Wrapper, Inner } = COMPOSED[name]!
+    it("element() nests recursively", async () => {
       const el = host()
-      owned(() =>
+      await owned(() =>
         flush(() =>
           void mounter.mount(el, Wrapper, {
             children: mounter.element(Wrapper, {
@@ -229,10 +274,9 @@ for (const [name, { mounter, Probe, flush, owned }] of Object.entries(CASES)) {
     // The chrome bundles its own runtime, so it must not build instances: it
     // defers, and the mounter materializes inside its own owner. Without this
     // the chrome would work but leak every composed child's computations.
-    it("materializes deferred elements passed as props", () => {
-      const { Wrapper, Inner } = COMPOSED[name]!
+    it("materializes deferred elements passed as props", async () => {
       const el = host()
-      flush(() =>
+      await flush(() =>
         void mounter.mount(el, Wrapper, {
           children: deferElement(Inner, { label: "deferred" }),
         })
@@ -240,10 +284,9 @@ for (const [name, { mounter, Probe, flush, owned }] of Object.entries(CASES)) {
       expect(el.querySelector("section em")?.textContent).toBe("deferred")
     })
 
-    it("materializes deferred elements recursively", () => {
-      const { Wrapper, Inner } = COMPOSED[name]!
+    it("materializes deferred elements recursively", async () => {
       const el = host()
-      flush(() =>
+      await flush(() =>
         void mounter.mount(el, Wrapper, {
           children: deferElement(Wrapper, {
             children: deferElement(Inner, { label: "deep-deferred" }),
@@ -253,35 +296,34 @@ for (const [name, { mounter, Probe, flush, owned }] of Object.entries(CASES)) {
       expect(el.querySelector("section section em")?.textContent).toBe("deep-deferred")
     })
 
-    it("materializes on update too", () => {
-      const { Wrapper, Inner } = COMPOSED[name]!
+    it("materializes on update too", async () => {
       const el = host()
       let handle!: ReturnType<Mounter["mount"]>
-      flush(() => {
+      await flush(() => {
         handle = mounter.mount(el, Wrapper, {
           children: deferElement(Inner, { label: "first" }),
         })
       })
-      flush(() => handle.update({ children: deferElement(Inner, { label: "second" }) }))
+      await flush(() => handle.update({ children: deferElement(Inner, { label: "second" }) }))
       expect(el.querySelector("section em")?.textContent).toBe("second")
     })
 
-    it("mounts are independent of one another", () => {
+    it("mounts are independent of one another", async () => {
       const a = host()
       const b = host()
       let ha!: ReturnType<Mounter["mount"]>
       let hb!: ReturnType<Mounter["mount"]>
-      flush(() => {
+      await flush(() => {
         ha = mounter.mount(a, Probe, { label: "a" })
         hb = mounter.mount(b, Probe, { label: "b" })
       })
-      flush(() => ha.update({ label: "a2" }))
+      await flush(() => ha.update({ label: "a2" }))
       expect(probe(a).textContent).toBe("a2")
       expect(probe(b).textContent).toBe("b")
-      flush(() => ha.destroy())
+      await flush(() => ha.destroy())
       expect(a.innerHTML).toBe("")
       expect(probe(b).textContent).toBe("b")
-      flush(() => hb.destroy())
+      await flush(() => hb.destroy())
     })
   })
 }

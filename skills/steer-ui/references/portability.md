@@ -43,9 +43,30 @@ bench can drive it.
 | Framework | Status |
 |---|---|
 | Solid (`adapters/mount/solid.ts`, ~60 loc) | **Built + contract-tested + browser-verified** |
-| React (`adapters/mount/react.ts`, ~40 loc) | **Built + contract-tested + browser-verified** |
-| Vue (`h` / `createApp`) | Named gap: write the mounter, add it to CASES |
-| Svelte 5 (`mount`) | Named gap: same shape |
+| React (`adapters/mount/react.ts`, ~45 loc) | **Built + contract-tested + browser-verified** |
+| Vue 3 (`adapters/mount/vue.ts`, ~50 loc) | **Built + contract-tested**; not yet exercised against a real Vue host |
+| Svelte 5 (`adapters/mount/svelte.svelte.ts`, ~60 loc) | **Built + contract-tested**; not yet exercised against a real Svelte host |
+
+All four pass the same 13 invariants. Vue and Svelte were added without a single
+change to the port, the chrome, or core, which is the evidence that a framework
+now costs a mounter rather than a canvas.
+
+Two framework differences the mounters absorb, so the contract does not have to
+grow a special case:
+
+- **Children.** React and Solid take an element as a plain prop; Vue takes a
+  slot; Svelte takes a snippet. Each mounter maps the manifest's `children` to
+  its own idiom, so `{"$component": ...}` fixture refs and state URLs with
+  composed children work identically everywhere. Svelte needs
+  `createRawSnippet`, the public escape hatch for producing a snippet from JS.
+- **Scheduling.** Solid is synchronous, React needs `act`, Vue needs
+  `nextTick`, Svelte needs `flushSync`. That lives in the test harness, not in
+  the port.
+
+The one asymmetry worth knowing: the Svelte mounter is the only one that cannot
+be plain TypeScript. `$state` is a compiler rune, so it lives in a `.svelte.ts`
+file. That is fine, because the mounter is host-compiled by design and a Svelte
+host already runs the Svelte plugin.
 
 ## Stores
 

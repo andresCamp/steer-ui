@@ -36,8 +36,8 @@ src/ports       the contract; SourceStore+ManifestStore required, rest optional;
                 Mounter is the one seam a framework enters through
 src/adapters    memory, node-fs, http (shared routes), vite + node-server
                 (driving), client (shared)
-  mount/        one small file per framework (solid, react), pinned by a
-                shared contract suite
+  mount/        one small file per framework (solid, react, vue, svelte),
+                all pinned by one shared contract suite
   chrome/       the bench + overlay, built ONCE into dist/chrome and served as
                 an asset the host never compiles
 playground      CLI bench + Solid and React host apps as visual benches
@@ -45,9 +45,10 @@ skills/steer-ui the agent front door: install / work / doctor / uninstall
 ```
 
 The chrome is built once and served, never compiled by the host. A host compiles
-its component glob and one ~40 line Mounter, which is why a React or Vue project
+its component glob and one small Mounter, which is why a React or Vue project
 never gets Solid in its bundle, and why adding a framework is a mounter plus an
-extractor rather than another canvas.
+extractor rather than another canvas. Solid, React, Vue and Svelte all pass the
+same 13 mounter invariants; rendering is shared, so only instantiation differs.
 
 Imported or intersection prop types? Turn on `steer({ typecheck: true })` and the manifest resolves them through the TypeScript checker instead of marking them unsupported. Non-Vite dev server? `createSteerServer` runs the same API standalone; the host proxies `/__steer/api/*`.
 

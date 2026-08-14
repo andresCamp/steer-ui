@@ -15,6 +15,15 @@ const CHROME_DIST = path.resolve(SRC, "../dist/chrome")
 
 const FRAMEWORKS = ["solid-js", "react", "react-dom", "vue", "svelte"]
 
+// One entry per shipped mounter. Adding a framework means adding a line here
+// and a line in the contract suite, and nothing else.
+const MOUNTERS = [
+  { file: "adapters/mount/solid.ts", allowed: "solid-js" },
+  { file: "adapters/mount/react.ts", allowed: "react" },
+  { file: "adapters/mount/vue.ts", allowed: "vue" },
+  { file: "adapters/mount/svelte.svelte.ts", allowed: "svelte" },
+]
+
 /** Bare module specifiers this file imports, ignoring relative paths. */
 function importsOf(file: string): string[] {
   const source = readFileSync(file, "utf8")
@@ -41,11 +50,8 @@ function sourcesUnder(dir: string): string[] {
 
 describe("framework boundary", () => {
   it("confines each mounter to its own framework", () => {
-    const cases = [
-      { file: path.join(SRC, "adapters/mount/solid.ts"), allowed: "solid-js" },
-      { file: path.join(SRC, "adapters/mount/react.ts"), allowed: "react" },
-    ]
-    for (const { file, allowed } of cases) {
+    for (const { file: rel, allowed } of MOUNTERS) {
+      const file = path.join(SRC, rel)
       const found = frameworksIn(file)
       const foreign = found.filter((fw) => !fw.startsWith(allowed))
       expect(foreign, `${path.basename(file)} imports a foreign framework`).toEqual([])
@@ -78,9 +84,8 @@ describe("framework boundary", () => {
   it("keeps the chrome out of anything a host compiles", () => {
     const hostCompiled = [
       path.join(SRC, "core/bridge.ts"),
-      path.join(SRC, "adapters/mount/react.ts"),
-      path.join(SRC, "adapters/mount/solid.ts"),
       path.join(SRC, "core/registry.ts"),
+      ...MOUNTERS.map((m) => path.join(SRC, m.file)),
     ]
     for (const file of hostCompiled) {
       const local = readFileSync(file, "utf8")
