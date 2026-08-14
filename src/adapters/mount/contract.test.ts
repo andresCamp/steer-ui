@@ -1,7 +1,7 @@
 /**
  * @vitest-environment happy-dom
  */
-import { createEffect, createRoot, type JSX } from "solid-js"
+import { createEffect, createRoot, mergeProps, type JSX } from "solid-js"
 import { act, createElement, useState as useReactState } from "react"
 import { h, nextTick } from "vue"
 import { describe, expect, it } from "vitest"
@@ -51,8 +51,13 @@ function SolidProbe(props: Record<string, unknown>): JSX.Element {
   const instance = ++solidInstances
   const el = document.createElement("div")
   el.setAttribute("data-instance", String(instance))
+  // Deliberately idiomatic: real Solid components run props through mergeProps
+  // to apply defaults. mergeProps copies property descriptors, so a props
+  // object exposing data descriptors instead of getters snapshots here and
+  // stops updating. A probe that reads props directly never notices.
+  const merged = mergeProps({ label: "" }, props)
   createEffect(() => {
-    el.textContent = typeof props.label === "string" ? props.label : ""
+    el.textContent = typeof merged.label === "string" ? merged.label : ""
   })
   return el as unknown as JSX.Element
 }
@@ -306,6 +311,20 @@ for (const [name, { mounter, Probe, Wrapper, Inner, flush, owned }] of Object.en
       })
       await flush(() => handle.update({ children: deferElement(Inner, { label: "second" }) }))
       expect(el.querySelector("section em")?.textContent).toBe("second")
+    })
+
+    // A knob the human has not touched yet arrives as undefined, then gets a
+    // value. Frameworks fix a component's prop keys at mount, so a prop that
+    // starts undefined has to keep working when it is finally set.
+    it("applies a prop that was undefined at mount", async () => {
+      const el = host()
+      let handle!: ReturnType<Mounter["mount"]>
+      await flush(() => {
+        handle = mounter.mount(el, Probe, { label: undefined })
+      })
+      expect(probe(el).textContent).toBe("")
+      await flush(() => handle.update({ label: "set later" }))
+      expect(probe(el).textContent).toBe("set later")
     })
 
     it("mounts are independent of one another", async () => {

@@ -75,3 +75,35 @@ describe("state URL grammar (invariant 2)", () => {
     expect(sameState({ a: "1" }, { a: "2" })).toBe(false)
   })
 })
+
+describe("coerceProps declares the whole prop set", () => {
+  const spec = {
+    name: "Button",
+    slug: "button",
+    file: "Button.tsx",
+    props: [
+      { name: "variant", kind: "enum" as const, options: ["primary", "ghost"], optional: true, raw: "" },
+      { name: "size", kind: "string" as const, optional: true, raw: "" },
+    ],
+    usages: [],
+  }
+
+  // Frameworks fix a component's prop keys when it mounts. A key that only
+  // shows up after the first knob edit never becomes reactive, so the bench
+  // renders a stale component while the state URL claims otherwise.
+  it("includes declared props that have no value yet", () => {
+    const props = coerceProps(spec, {})
+    expect(Object.keys(props).sort()).toEqual(["size", "variant"])
+    expect(props.variant).toBeUndefined()
+  })
+
+  it("keeps the key set stable as knobs are set", () => {
+    const empty = Object.keys(coerceProps(spec, {})).sort()
+    const partial = Object.keys(coerceProps(spec, { variant: "ghost" })).sort()
+    expect(partial).toEqual(empty)
+  })
+
+  it("still coerces values that are set", () => {
+    expect(coerceProps(spec, { variant: "ghost" }).variant).toBe("ghost")
+  })
+})

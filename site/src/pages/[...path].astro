@@ -1,6 +1,5 @@
 ---
 import Layout from "../layouts/Layout.astro"
-import Bench from "../islands/Bench"
 import manifest from "../../public/__steer/api/manifest.json"
 
 /**
@@ -20,5 +19,19 @@ const { name } = Astro.props
 ---
 
 <Layout title={`${name}, steer-ui`}>
-  <div id="steer-root"><Bench client:only="solid-js" /></div>
+  <link rel="stylesheet" href="/__steer/chrome/bench.css" />
+  <div id="steer-root"></div>
+
+  {/*
+    Two module graphs, exactly as in a real host. This script is compiled by the
+    site (it needs the component glob and the static-API shim); the chrome below
+    it is the prebuilt artifact, served and never compiled. Order matters only
+    so the shim patches fetch before the chrome asks for anything; the
+    registration itself is order-independent, the bridge queues it.
+  */}
+  <script>
+    import "../lib/api-shim"
+    import "../steer"
+  </script>
+  <script type="module" src="/__steer/chrome/bench.js"></script>
 </Layout>

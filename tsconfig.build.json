@@ -1,0 +1,20 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "dist",
+    "rootDir": "src",
+    "declaration": true,
+    "sourceMap": true,
+    "types": ["node"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"]
+  },
+  "include": ["src/**/*"],
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "src/adapters/mount/__probes__/**",
+    "src/adapters/chrome/**",
+    "src/adapters/mount/svelte.svelte.ts"
+  ]
+}

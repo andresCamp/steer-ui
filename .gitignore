@@ -12,3 +12,4 @@ site/.astro/
 .dev.vars*
 playground/vue-app/.steer/manifest.json
 playground/*/.vite
+site/public/__steer/chrome/

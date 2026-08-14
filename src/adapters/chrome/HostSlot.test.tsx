@@ -1,6 +1,7 @@
 /**
  * @vitest-environment happy-dom
  */
+import { createEffect, createSignal } from "solid-js"
 import { render } from "solid-js/web"
 import { afterEach, describe, expect, it } from "vitest"
 import { clearRegistry, registerComponents } from "../../core/registry"
@@ -17,7 +18,11 @@ import { connectHost } from "./host"
 
 function Chip(props: Record<string, unknown>) {
   const el = document.createElement("b")
-  el.textContent = typeof props.label === "string" ? props.label : ""
+  // A Solid component body runs once, so the read has to sit in a tracking
+  // scope. In a real component that is JSX; here it is an effect.
+  createEffect(() => {
+    el.textContent = typeof props.label === "string" ? props.label : ""
+  })
   return el as unknown as never
 }
 
@@ -36,6 +41,26 @@ afterEach(() => {
 })
 
 describe("HostSlot", () => {
+  // Every knob edit flows through here. If the slot does not re-run when its
+  // values change, the canvas shows a stale component while the state URL says
+  // otherwise: the bench silently lies about what you are looking at.
+  it("re-renders when its values change", () => {
+    const [values, setValues] = createSignal<Record<string, unknown>>({ label: "one" })
+    connectHost()
+    publishRegistration(globalThis as never, {
+      modules: { "./Chip.tsx": { Chip } },
+      mounter: solidMounter,
+    })
+
+    const el = document.createElement("div")
+    document.body.appendChild(el)
+    disposers.push(render(() => <HostSlot name="Chip" values={values()} />, el))
+    expect(el.querySelector("b")?.textContent).toBe("one")
+
+    setValues({ label: "two" })
+    expect(el.querySelector("b")?.textContent).toBe("two")
+  })
+
   it("mounts a registered component through the host's mounter", () => {
     const target = {}
     connectHost.call(null)

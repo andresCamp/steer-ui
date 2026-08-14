@@ -77,7 +77,14 @@ body {
     opacity 560ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.no-cursor { cursor: none; }
+/* Armed for a note, the page is a canvas: the cursor is the ghost pin, and a
+   drag draws a region rather than selecting the paragraph under it. */
+.no-cursor {
+  cursor: none;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
 
 /* Idle drift: the scatter breathes, each tile on its own phase. */
 @keyframes float {

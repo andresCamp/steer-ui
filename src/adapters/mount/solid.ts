@@ -30,8 +30,13 @@ export const solidMounter: Mounter = {
           get: (_target, key: string | symbol) => values()[key as string],
           has: (_target, key: string | symbol) => (key as string) in values(),
           ownKeys: () => Reflect.ownKeys(values()),
+          // An ACCESSOR descriptor, not a data one. Idiomatic Solid components
+          // run props through mergeProps for defaults, and anything that copies
+          // descriptors would snapshot a `value` and silently lose reactivity:
+          // the canvas then shows a stale component while the state URL claims
+          // otherwise. A getter survives the copy.
           getOwnPropertyDescriptor: (_target, key: string | symbol) => ({
-            value: values()[key as string],
+            get: () => values()[key as string],
             enumerable: true,
             configurable: true,
           }),

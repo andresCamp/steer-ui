@@ -41,6 +41,21 @@ for (const spec of manifest.components) {
 
 await writeJson(path.join(apiDir, "doctor"), await engine.doctor())
 
+// The site serves the SAME artifact a host installs, rather than compiling its
+// own copy of the chrome. Otherwise steerui.com can look right while the
+// shipped bundle is broken, or the reverse, and the shop window stops being
+// evidence.
+const chromeSrc = path.resolve(root, "../dist/chrome")
+const chromeOut = path.join(root, "public/__steer/chrome")
+try {
+  await fs.rm(chromeOut, { recursive: true, force: true })
+  await fs.cp(chromeSrc, chromeOut, { recursive: true })
+} catch {
+  throw new Error(
+    `steer: no built chrome at ${chromeSrc}. Run \`pnpm build:chrome\` from the repo root first.`,
+  )
+}
+
 console.log(
   `steer: ${manifest.components.length} components, ${manifest.warnings?.length ?? 0} warnings`,
 )

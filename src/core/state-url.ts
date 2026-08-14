@@ -63,7 +63,16 @@ export function coerceProps(
   const props: Record<string, unknown> = {}
   for (const prop of spec.props) {
     const value = values[prop.name]
-    if (value === undefined || value === "") continue
+    if (value === undefined || value === "") {
+      // Declared, but unset. The key still has to exist: the manifest defines
+      // the component's prop set, and frameworks snapshot the prop KEYS when
+      // the component mounts (Solid's mergeProps does). A key that only appears
+      // once a knob is first touched is invisible forever after, so the canvas
+      // shows a stale component while the state URL says otherwise.
+      // undefined is also what every framework reads as "use your default".
+      props[prop.name] = undefined
+      continue
+    }
     switch (prop.kind) {
       case "boolean":
         props[prop.name] = value === "true"

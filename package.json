@@ -1,13 +1,44 @@
 {
   "name": "steer-ui",
-  "private": true,
   "license": "MIT",
   "version": "0.1.0",
   "type": "module",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./vite": {
+      "types": "./dist/adapters/vite.d.ts",
+      "default": "./dist/adapters/vite.js"
+    },
+    "./server": {
+      "types": "./dist/adapters/node-server.d.ts",
+      "default": "./dist/adapters/node-server.js"
+    },
+    "./bridge": {
+      "types": "./dist/core/bridge.d.ts",
+      "default": "./dist/core/bridge.js"
+    },
+    "./registry": {
+      "types": "./dist/core/registry.d.ts",
+      "default": "./dist/core/registry.js"
+    },
+    "./mount/solid": {
+      "types": "./dist/adapters/mount/solid.d.ts",
+      "default": "./dist/adapters/mount/solid.js"
+    },
+    "./mount/react": {
+      "types": "./dist/adapters/mount/react.d.ts",
+      "default": "./dist/adapters/mount/react.js"
+    },
+    "./mount/vue": {
+      "types": "./dist/adapters/mount/vue.d.ts",
+      "default": "./dist/adapters/mount/vue.js"
+    },
+    "./mount/svelte": "./dist/adapters/mount/svelte.svelte.ts",
+    "./chrome/*": "./dist/chrome/*",
+    "./package.json": "./package.json"
   },
   "scripts": {
     "dev": "pnpm dev:solid",
@@ -18,21 +49,17 @@
     "build:chrome": "vite build --config vite.chrome.config.ts",
     "test": "vitest run",
     "check-types": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.react.json --noEmit",
-    "build": "pnpm -C site install --frozen-lockfile && pnpm -C site run build",
-    "deploy": "wrangler deploy"
+    "build": "pnpm build:chrome && pnpm -C site install --frozen-lockfile && pnpm -C site run build",
+    "deploy": "wrangler deploy",
+    "build:package": "tsup",
+    "build:npm": "pnpm build:chrome && pnpm build:package && node scripts/copy-source-mounters.mjs"
   },
   "dependencies": {
-    "@floating-ui/dom": "^1.8.0",
-    "@solidjs/router": "^0.15.3",
-    "lucide-react": "^0.540.0",
-    "lucide-solid": "^1.30.0",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "react-router": "^7.8.0",
-    "solid-js": "^1.9.7",
     "typescript": "^5.8.3"
   },
   "devDependencies": {
+    "@floating-ui/dom": "^1.6.0",
+    "@solidjs/router": "^0.15.3",
     "@sveltejs/vite-plugin-svelte": "^5.1.1",
     "@tailwindcss/vite": "^4.1.11",
     "@types/node": "^24.0.0",
@@ -41,8 +68,15 @@
     "@vitejs/plugin-react": "^4.7.0",
     "@vitejs/plugin-vue": "^6.0.8",
     "happy-dom": "^20.11.2",
+    "lucide-react": "^0.540.0",
+    "lucide-solid": "^1.30.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router": "^7.8.0",
+    "solid-js": "^1.9.14",
     "svelte": "^5.56.9",
     "tailwindcss": "^4.1.11",
+    "tsup": "^8.5.1",
     "vite": "^6.3.5",
     "vite-plugin-solid": "^2.11.6",
     "vitest": "^3.2.4",
@@ -54,5 +88,63 @@
       "esbuild",
       "workerd"
     ]
+  },
+  "description": "The visual interface for steering coding agents to the last mile of UI. A component catalog derived from source, every rendered state a URL, feedback as git-committed data.",
+  "homepage": "https://steerui.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/andresCamp/steer-ui.git"
+  },
+  "bugs": {
+    "url": "https://github.com/andresCamp/steer-ui/issues"
+  },
+  "author": "Andrés Campos",
+  "keywords": [
+    "storybook",
+    "component",
+    "workshop",
+    "bench",
+    "agent",
+    "ai",
+    "vite",
+    "solid",
+    "react",
+    "vue",
+    "svelte",
+    "design-review"
+  ],
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0",
+    "solid-js": "^1.9.0",
+    "svelte": "^5.0.0",
+    "vite": "^6.0.0 || ^7.0.0",
+    "vue": "^3.4.0"
+  },
+  "peerDependenciesMeta": {
+    "vite": {
+      "optional": true
+    },
+    "solid-js": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    },
+    "vue": {
+      "optional": true
+    },
+    "svelte": {
+      "optional": true
+    }
   }
 }
