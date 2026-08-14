@@ -10,16 +10,16 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "dev": "pnpm build:chrome && vite playground/app",
+    "dev": "pnpm dev:solid",
+    "dev:solid": "pnpm build:chrome && vite playground/solid-app",
     "dev:react": "pnpm build:chrome && vite playground/react-app",
-    "dev:anchor": "vite playground/anchor-lab",
-    "test": "vitest run",
-    "check-types": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.react.json --noEmit && tsc -p tsconfig.lab.json --noEmit",
+    "dev:vue": "pnpm build:chrome && vite playground/vue-app",
     "playground": "bun playground/run.ts",
-    "build": "pnpm -C site install --frozen-lockfile && pnpm -C site run build",
-    "deploy": "wrangler deploy",
     "build:chrome": "vite build --config vite.chrome.config.ts",
-    "dev:vue": "pnpm build:chrome && vite playground/vue-app"
+    "test": "vitest run",
+    "check-types": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.react.json --noEmit",
+    "build": "pnpm -C site install --frozen-lockfile && pnpm -C site run build",
+    "deploy": "wrangler deploy"
   },
   "dependencies": {
     "@floating-ui/dom": "^1.8.0",

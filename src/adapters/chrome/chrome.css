@@ -1,7 +1,7 @@
 /* The bench document's stylesheet. The bench owns its whole page, so it takes
    Tailwind entire, preflight included. */
 @import "tailwindcss";
-@source "../../../src/adapters/solid";
+@source "../../../src/adapters/chrome";
 @source "../../../src/adapters/chrome";
 @theme {
   --font-sans: ui-sans-serif, system-ui, -apple-system, "SF Pro Text", "Segoe UI", sans-serif;

@@ -8,9 +8,9 @@ import { MantineChips } from "../components/MantineChips"
 import { HeroSlider } from "../components/HeroSlider"
 import { DaisyRating } from "../components/DaisyRating"
 import { ChakraAvatarGroup } from "../components/ChakraAvatarGroup"
-import { Pin } from "../../../src/adapters/solid/chrome/Pin"
-import { Region } from "../../../src/adapters/solid/chrome/Region"
-import { NoteThread } from "../../../src/adapters/solid/chrome/NoteThread"
+import { Pin } from "../../../src/adapters/chrome/parts/Pin"
+import { Region } from "../../../src/adapters/chrome/parts/Region"
+import { NoteThread } from "../../../src/adapters/chrome/parts/NoteThread"
 import { DemoCursor } from "./DemoCursor"
 import { glide, drag, dragDuration, fitts, overshootPoint, OVERSHOOT_THRESHOLD, type Point } from "../lib/cursor-path"
 
@@ -123,9 +123,12 @@ const SPECIMENS: Specimen[] = [
   },
 ]
 
-/** How far clear of its component a pin sits. A pin is 28px, so this leaves a
- *  visible gap under the thing rather than resting on its edge. */
-const PIN_CLEAR = 26
+/** A pin is 28px across, so this is its radius: the amount of it that sticks
+ *  out past whatever point it is centred on. */
+const PIN_RADIUS = 14
+/** How far inside a component's corner a pin sits. A note belongs on the thing
+ *  it is about — but in its quiet corner, not over the part that moves. */
+const PIN_INSET = 18
 
 interface Scene {
   id: string
@@ -134,9 +137,9 @@ interface Scene {
    *  since the pin goes where the cursor goes, where the pin ends up. A region
    *  is centred on the component instead, so it has no spot to name. */
   at?: Point
-  /** Pixels to push that point clear of the component. In px, not fractions:
-   *  a fraction of a tall component clears it by more than the same fraction
-   *  of a short one, and the gap wants to look the same on every one. */
+  /** Pixels to shift that point. In px, not fractions: the same fraction of a
+   *  tall component and a short one lands a different distance from the edge,
+   *  and the inset wants to look the same on every one. */
   nudge?: Point
   selector: string
   note: string
@@ -152,10 +155,11 @@ const SCENES: Scene[] = [
   {
     id: "field",
     kind: "pin",
-    // Off the field's leading bottom corner. On it, the pin sat over the very
-    // label and rule the note is about.
-    at: { x: 0.07, y: 1 },
-    nudge: { x: 0, y: PIN_CLEAR },
+    // The field's bottom-right corner: on the component, but the far end of it
+    // from the floating label the note is about and from the cursor that comes
+    // back to type in it.
+    at: { x: 1, y: 1 },
+    nudge: { x: -PIN_INSET, y: -PIN_INSET },
     selector: "MaterialField",
     note: "The label collides with the underline when it shrinks.",
     reply: "Lifted the floating label clear of the rule and matched the focus colour.",
@@ -175,10 +179,11 @@ const SCENES: Scene[] = [
   {
     id: "switch",
     kind: "pin",
-    // Under the switch rather than on it, so the track stays readable while
-    // the note complains about it.
-    at: { x: 0.05, y: 1 },
-    nudge: { x: 0, y: PIN_CLEAR },
+    // Bottom-right, which on this component is the far end of the label text.
+    // The track sits top-left, so it stays in plain sight and you watch it
+    // flip while the note about it is open.
+    at: { x: 1, y: 1 },
+    nudge: { x: -PIN_INSET, y: -PIN_INSET },
     selector: "ShadcnSwitch",
     note: "Off reads as disabled, not as a choice.",
     reply: "Raised the track contrast so off is clearly still yours to flip.",
@@ -365,7 +370,7 @@ export default function HeroCanvas() {
     // the box has to stop a pin's radius plus a margin short of the edge or
     // the pin hangs off the screen. A phone is where this bites: the padding
     // that gives a component room on a desktop is most of a phone's width.
-    const edge = PIN_CLEAR + 12
+    const edge = PIN_RADIUS + 24
     const w = Math.min(Math.max(REGION_MIN_W, c.w + REGION_PAD_X * 2), window.innerWidth - edge * 2)
     const h = Math.max(REGION_MIN_H, c.h + REGION_PAD_Y * 2)
     const x = Math.max(edge, Math.min(c.x + c.w / 2 - w / 2, window.innerWidth - w - edge))

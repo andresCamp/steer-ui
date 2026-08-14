@@ -11,6 +11,6 @@
     "src/adapters/node-server.test.ts",
     "src/adapters/vite.ts",
     "playground/run.ts",
-    "playground/app/vite.config.ts"
+    "playground/solid-app/vite.config.ts"
   ]
 }

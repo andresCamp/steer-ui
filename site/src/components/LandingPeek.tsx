@@ -11,7 +11,7 @@ export interface LandingPeekProps {
 
 /**
  * The landing page's own peek, forked from the product's live-app chrome
- * (src/adapters/solid/chrome/Peek.tsx) and cut down to what a first-time
+ * (src/adapters/chrome/parts/Peek.tsx) and cut down to what a first-time
  * visitor can use.
  *
  * What the live HUD carries and this one drops: the pins visibility toggle

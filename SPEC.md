@@ -121,8 +121,8 @@ src/
     ├── client.ts          framework-neutral browser client + selector
     ├── extract/           SFC readers: vue.ts, svelte.ts (TSX lives in core)
     ├── mount/             one file per framework: solid, react, vue, svelte
-    ├── solid/             the chrome's components (built, never host-compiled)
-    └── chrome/            bench + overlay entries -> dist/chrome/*
+    └── chrome/            THE chrome: bench + overlay entries, index, canvas,
+                           notes layer, parts/ -> built to dist/chrome/*
 playground/
 ├── run.ts                 CLI bench: full loop offline, deterministic
 ├── app/                   visual bench: Vite+Solid host (typecheck on)
@@ -197,7 +197,7 @@ The playground app is the reference deployment and MUST stay runnable offline: `
 | Imported/aliased/intersection Props become knobs under `typecheck` | `extract-checked.test.ts` (plus the syntactic-fallback case) |
 | The API is transport-identical | `node-server.test.ts` runs the full lifecycle over real HTTP with no bundler |
 | Full loop works offline | `playground/run.ts` (deterministic CLI run) |
-| Full loop works in a real browser, on both surfaces | Playwright pass over `/__steer` and canvas routes in `playground/app` (Solid) and `playground/react-app` (React) |
+| Full loop works in a real browser, on both surfaces | Playwright pass over `/__steer` and canvas routes in `playground/solid-app` (Solid) and `playground/react-app` (React) |
 
 ---
 

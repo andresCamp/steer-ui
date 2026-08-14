@@ -1,9 +1,9 @@
 import { createSignal, onCleanup, onMount, For, Show } from "solid-js"
 import { LandingPeek } from "../components/LandingPeek"
-import { GhostPin } from "../../../src/adapters/solid/chrome/GhostPin"
-import { Pin } from "../../../src/adapters/solid/chrome/Pin"
-import { NoteThread } from "../../../src/adapters/solid/chrome/NoteThread"
-import { Floater } from "../../../src/adapters/solid/chrome/Floater"
+import { GhostPin } from "../../../src/adapters/chrome/parts/GhostPin"
+import { Pin } from "../../../src/adapters/chrome/parts/Pin"
+import { NoteThread } from "../../../src/adapters/chrome/parts/NoteThread"
+import { Floater } from "../../../src/adapters/chrome/parts/Floater"
 import type { SteerNote } from "../../../src/core/model"
 
 /**

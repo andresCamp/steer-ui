@@ -3,8 +3,17 @@
   "compilerOptions": {
     "jsx": "preserve",
     "jsxImportSource": "solid-js",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": ["vite/client"]
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "types": [
+      "vite/client"
+    ]
   },
-  "include": ["src/adapters/solid/**/*", "playground/app/src/**/*"]
+  "include": [
+    "src/adapters/chrome/**/*",
+    "playground/solid-app/src/**/*"
+  ]
 }

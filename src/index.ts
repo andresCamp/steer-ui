@@ -1,5 +1,5 @@
 // Barrel for node-side consumers (tests, CLIs, bundler plugins). Browser
-// surfaces import pure modules directly (core/, adapters/solid/) so node
+// surfaces import pure modules directly (core/, adapters/chrome/) so node
 // and bundler code never enters an app bundle.
 
 export * from "./core/model"

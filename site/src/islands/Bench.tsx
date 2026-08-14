@@ -1,7 +1,7 @@
 import { Router, Route } from "@solidjs/router"
-import { SteerIndex } from "../../../src/adapters/solid/SteerIndex"
-import { SteerComponent } from "../../../src/adapters/solid/SteerComponent"
-import { connectHost } from "../../../src/adapters/solid/host"
+import { SteerIndex } from "../../../src/adapters/chrome/SteerIndex"
+import { SteerComponent } from "../../../src/adapters/chrome/SteerComponent"
+import { connectHost } from "../../../src/adapters/chrome/host"
 import "../steer"
 import "../lib/api-shim"
 

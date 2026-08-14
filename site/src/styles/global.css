@@ -1,6 +1,6 @@
 @import "tailwindcss";
 /* The product surface lives in the lab, outside this site; scan it too. */
-@source "../../../src/adapters/solid";
+@source "../../../src/adapters/chrome";
 
 /* Phones that are short as well as narrow: the copy has to give up room. */
 @custom-variant short (@media (max-height: 700px));

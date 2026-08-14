@@ -24,6 +24,24 @@ const MOUNTERS = [
   { file: "adapters/mount/svelte.svelte.ts", allowed: "svelte" },
 ]
 
+/** Every import specifier in a file, relative ones included. */
+function allSpecifiers(file: string): string[] {
+  const source = readFileSync(file, "utf8")
+  const out: string[] = []
+  const pattern = /(?:^|\n)\s*(?:import|export)\s[^\n]*?from\s+["']([^"']+)["']/g
+  for (const match of source.matchAll(pattern)) if (match[1]) out.push(match[1])
+  return out
+}
+
+/** Where a relative specifier actually lands, so "../chrome/x" is caught the
+ *  same as "adapters/chrome/x". A textual check misses the shorter form, which
+ *  is the one anyone writing from adapters/mount would naturally reach for. */
+function resolvedTargets(file: string): string[] {
+  return allSpecifiers(file)
+    .filter((spec) => spec.startsWith("."))
+    .map((spec) => path.resolve(path.dirname(file), spec))
+}
+
 /** Bare module specifiers this file imports, ignoring relative paths. */
 function importsOf(file: string): string[] {
   const source = readFileSync(file, "utf8")
@@ -75,11 +93,10 @@ describe("framework boundary", () => {
   // to a technology. Core reaching into adapters inverts that and is how a pure
   // engine quietly acquires a dependency on Vue's file format.
   it("keeps core from importing adapters", () => {
+    const adapters = path.join(SRC, "adapters")
     for (const file of sourcesUnder(path.join(SRC, "core"))) {
-      const source = readFileSync(file, "utf8")
-      expect(source, `${path.relative(SRC, file)} imports an adapter`).not.toMatch(
-        /from\s+["'][^"']*\/adapters\//
-      )
+      const reaching = resolvedTargets(file).filter((t) => t.startsWith(adapters))
+      expect(reaching, `${path.relative(SRC, file)} imports an adapter`).toEqual([])
     }
   })
 
@@ -99,11 +116,10 @@ describe("framework boundary", () => {
       path.join(SRC, "core/registry.ts"),
       ...MOUNTERS.map((m) => path.join(SRC, m.file)),
     ]
+    const chrome = path.join(SRC, "adapters/chrome")
     for (const file of hostCompiled) {
-      const local = readFileSync(file, "utf8")
-      expect(local, `${path.relative(SRC, file)} reaches into the chrome`).not.toMatch(
-        /from\s+["'][^"']*adapters\/(chrome|solid)\//
-      )
+      const reaching = resolvedTargets(file).filter((t) => t.startsWith(chrome))
+      expect(reaching, `${path.relative(SRC, file)} reaches into the chrome`).toEqual([])
     }
   })
 })

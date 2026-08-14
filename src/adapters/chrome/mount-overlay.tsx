@@ -4,12 +4,12 @@ import { fetchNotes, moveNote, postNote, replyNote, resolveNote, selectorWithin 
 import type { SteerNote } from "../../core/model"
 import { parseStateUrl } from "../../core/state-url"
 import { STEER_COMPONENT_ATTR, STEER_PROPS_ATTR, slugFromComponentName } from "../stamp-attr"
-import { Peek } from "./chrome/Peek"
-import { Pin } from "./chrome/Pin"
-import { GhostPin } from "./chrome/GhostPin"
-import { NoteThread } from "./chrome/NoteThread"
-import { Floater } from "./chrome/Floater"
-import { bandOf } from "./chrome/bands"
+import { Peek } from "./parts/Peek"
+import { Pin } from "./parts/Pin"
+import { GhostPin } from "./parts/GhostPin"
+import { NoteThread } from "./parts/NoteThread"
+import { Floater } from "./parts/Floater"
+import { bandOf } from "./parts/bands"
 
 const AUTHOR = "andres"
 

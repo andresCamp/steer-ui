@@ -15,7 +15,7 @@ export default defineConfig({
     tailwindcss(),
     steer({
       typecheck: true,
-      extraComponentDirs: ["../../src/adapters/solid/chrome"],
+      extraComponentDirs: ["../../src/adapters/chrome/parts"],
       register: "src/steer.ts",
       styles: "src/app.css",
     }),

@@ -13,7 +13,7 @@ publishRegistration(globalThis, {
       string,
       Record<string, unknown>
     >),
-    ...(import.meta.glob("../../../src/adapters/solid/chrome/*.tsx", { eager: true }) as Record<
+    ...(import.meta.glob("../../../src/adapters/chrome/parts/*.tsx", { eager: true }) as Record<
       string,
       Record<string, unknown>
     >),

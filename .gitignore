@@ -1,6 +1,6 @@
 node_modules
 dist
-playground/app/.steer/manifest.json
+playground/solid-app/.steer/manifest.json
 playground/react-app/.steer/manifest.json
 .playwright-mcp/
 
