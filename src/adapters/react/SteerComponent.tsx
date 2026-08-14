@@ -382,8 +382,8 @@ export function SteerComponent() {
           h: Math.abs(cur.y - start.y),
         }
         setRegionDrag(region)
-        // Ghost pin previews its final perch: the region's top-right corner.
-        setHoverPin({ x: region.x + region.w, y: region.y })
+        // The ghost previews where the pin will land: under the cursor.
+        setHoverPin(cur)
       }
       const up = (ev: PointerEvent) => {
         window.removeEventListener("pointermove", move)
@@ -396,8 +396,9 @@ export function SteerComponent() {
             : "(canvas)"
         const rect = dragged ? region : undefined
         setPending({
-          // Region notes anchor their pin to the region's top-right corner.
-          coords: rect ? { x: rect.x + rect.w, y: rect.y } : cur,
+          // Pin and cursor part ways nowhere: a region note's pin lands where
+          // the drag ended, not on a corner of the box it drew.
+          coords: cur,
           selector,
           rect,
         })
@@ -512,8 +513,8 @@ export function SteerComponent() {
         setPinOverride((prev) => ({
           ...prev,
           [note.id]: {
-            // The pin stays perched on the region's top-right corner.
-            coords: { x: nextRect.x + nextRect.w, y: nextRect.y },
+            // Resizing is a gesture too: the pin rides the corner being pulled.
+            coords: cur,
             rect: nextRect,
           },
         }))
@@ -546,7 +547,6 @@ export function SteerComponent() {
     e.preventDefault()
     const startX = e.clientX
     const startY = e.clientY
-    const origCoords = note.coords
     const origRect = note.rect
     let moved = false
     const move = (ev: PointerEvent) => {
@@ -558,7 +558,7 @@ export function SteerComponent() {
       setPinOverride((prev) => ({
         ...prev,
         [note.id]: {
-          coords: { x: origCoords.x + dx, y: origCoords.y + dy },
+          coords: benchRel(ev.clientX, ev.clientY),
           rect: origRect ? { ...origRect, x: origRect.x + dx, y: origRect.y + dy } : undefined,
         },
       }))

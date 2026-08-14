@@ -151,17 +151,13 @@ function OverlayApp() {
     // While composing, pins are inert — the press belongs to the new note.
     if (noteMode()) return
     e.preventDefault()
-    const start = pinAt(n)
     const sx = e.clientX
     const sy = e.clientY
     let moved = false
     const move = (ev: PointerEvent) => {
       if (!moved && Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) <= 4) return
       moved = true
-      setDragging((prev) => ({
-        ...prev,
-        [n.id]: { x: start.x + (ev.clientX - sx), y: start.y + (ev.clientY - sy) },
-      }))
+      setDragging((prev) => ({ ...prev, [n.id]: { x: ev.clientX, y: ev.clientY } }))
     }
     const up = async () => {
       window.removeEventListener("pointermove", move)

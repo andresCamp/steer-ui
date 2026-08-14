@@ -304,8 +304,8 @@ export function SteerComponent() {
           h: Math.abs(cur.y - start.y),
         }
         setRegionDrag(region)
-        // Ghost pin previews its final perch: the region's top-right corner.
-        setHoverPin({ x: region.x + region.w, y: region.y })
+        // The ghost previews where the pin will land: under the cursor.
+        setHoverPin(cur)
       }
       const up = (ev: PointerEvent) => {
         window.removeEventListener("pointermove", move)
@@ -318,8 +318,9 @@ export function SteerComponent() {
             : "(canvas)"
         const region = dragged ? regionDrag() : undefined
         setPending({
-          // Region notes anchor their pin to the region's top-right corner.
-          coords: region ? { x: region.x + region.w, y: region.y } : cur,
+          // Pin and cursor part ways nowhere: a region note's pin lands where
+          // the drag ended, not on a corner of the box it drew.
+          coords: cur,
           selector,
           rect: region,
         })
@@ -466,8 +467,8 @@ export function SteerComponent() {
       setPinOverride((prev) => ({
         ...prev,
         [note.id]: {
-          // The pin stays perched on the region's top-right corner.
-          coords: { x: nextRect.x + nextRect.w, y: nextRect.y },
+          // Resizing is a gesture too: the pin rides the corner being pulled.
+          coords: cur,
           rect: nextRect,
         },
       }))
@@ -492,11 +493,11 @@ export function SteerComponent() {
   }
 
   /**
-   * Drag a whole note (pin and its region move together) from either handle.
-   * Grabbing the region body hands the pin to the cursor: the corner perch is
-   * only where a pin starts life, not somewhere it has to stay.
+   * Drag a whole note from either handle: the region translates under the
+   * cursor and the pin sits on it. One rule, no exceptions — the pin is never
+   * perched on a corner, whether you grabbed it or the region around it.
    */
-  const onNoteDrag = (note: SteerNote, fromRegion = false) => (e: PointerEvent) => {
+  const onNoteDrag = (note: SteerNote) => (e: PointerEvent) => {
     // While composing a note, existing pins are inert: the click falls
     // through to the canvas and places the new note instead.
     if (noteMode()) return
@@ -504,7 +505,6 @@ export function SteerComponent() {
     e.preventDefault()
     const startX = e.clientX
     const startY = e.clientY
-    const origCoords = note.coords
     const origRect = note.rect
     let moved = false
     const move = (ev: PointerEvent) => {
@@ -516,9 +516,7 @@ export function SteerComponent() {
       setPinOverride((prev) => ({
         ...prev,
         [note.id]: {
-          coords: fromRegion
-            ? benchRel(ev.clientX, ev.clientY)
-            : { x: origCoords.x + dx, y: origCoords.y + dy },
+          coords: benchRel(ev.clientX, ev.clientY),
           rect: origRect ? { ...origRect, x: origRect.x + dx, y: origRect.y + dy } : undefined,
         },
       }))
@@ -740,7 +738,7 @@ export function SteerComponent() {
                             <Region
                               open={openPin() === note.id}
                               inert={noteMode()}
-                              onPointerDown={onNoteDrag(note, true)}
+                              onPointerDown={onNoteDrag(note)}
                               onResize={(cx, cy, e) => onRegionResize(note, cx, cy)(e)}
                             />
                           </div>

@@ -154,17 +154,13 @@ export default function PageNotes() {
   const onPinDrag = (n: SteerNote) => (e: PointerEvent) => {
     if (noteMode()) return
     e.preventDefault()
-    const start = pinAt(n)
     const sx = e.pageX
     const sy = e.pageY
     let moved = false
     const move = (ev: PointerEvent) => {
       if (!moved && Math.abs(ev.pageX - sx) + Math.abs(ev.pageY - sy) <= 4) return
       moved = true
-      setDragging((prev) => ({
-        ...prev,
-        [n.id]: { x: start.x + (ev.pageX - sx), y: start.y + (ev.pageY - sy) },
-      }))
+      setDragging((prev) => ({ ...prev, [n.id]: { x: ev.pageX, y: ev.pageY } }))
     }
     const up = () => {
       window.removeEventListener("pointermove", move)
@@ -198,7 +194,12 @@ export default function PageNotes() {
           {(n, i) => (
             <span
               class="pointer-events-auto absolute"
-              style={{ left: `${pinAt(n).x}px`, top: `${pinAt(n).y}px` }}
+              style={{
+                left: `${pinAt(n).x}px`,
+                top: `${pinAt(n).y}px`,
+                // The cursor holds the middle of the pin, never its corner.
+                transform: "translate(-50%, -50%)",
+              }}
             >
               <Pin
                 label={String(i() + 1)}
@@ -247,7 +248,10 @@ export default function PageNotes() {
 
       <Show when={noteMode() && ghost()}>
         {(g) => (
-          <div class="pointer-events-none absolute z-50" style={{ left: `${g().x}px`, top: `${g().y}px` }}>
+          <div
+            class="pointer-events-none absolute z-50"
+            style={{ left: `${g().x}px`, top: `${g().y}px`, transform: "translate(-50%, -50%)" }}
+          >
             <GhostPin />
           </div>
         )}

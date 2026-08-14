@@ -15,7 +15,7 @@ export function DaisyRating(props: DaisyRatingProps) {
   const [value, setValue] = createSignal(p.value)
 
   return (
-    <div class="flex items-center gap-1">
+    <div class="flex items-center justify-center gap-1">
       <For each={[1, 2, 3, 4, 5]}>
         {(i) => (
           <button type="button" onClick={() => setValue(i)} class="refines leading-none">

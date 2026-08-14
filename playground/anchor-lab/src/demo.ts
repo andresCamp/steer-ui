@@ -92,6 +92,9 @@ let hover: { x: number; y: number } | null = null
 let marquee: Box | null = null
 let dragStart: { x: number; y: number } | null = null
 let regionOverride: { id: string; box: Box } | null = null
+// A pin held by the cursor, in client space. While a gesture is in flight the
+// pin belongs to the cursor and to nothing else — not to a region corner.
+let pinOverride: { id: string; at: { x: number; y: number } } | null = null
 let widthLock: number | null = null
 let allowUnlock = true
 let pending: {
@@ -411,18 +414,17 @@ function render(): void {
         layer.append(region)
       }
 
+      // The pin is a stored position, never a corner of its region: coords
+      // place it, and a gesture in flight hands it to the cursor.
       let x: number
       let y: number
-      if (n.region && here) {
-        const rb = regionOverride?.id === n.id ? regionOverride.box : resolveRegion(app, n.region)
-        if (!rb) return
-        x = rb.left + rb.width
-        y = rb.top
+      if (pinOverride?.id === n.id) {
+        x = pinOverride.at.x
+        y = pinOverride.at.y
       } else {
-        x = box.left + n.coords.x * box.width
+        x = Math.min(box.left + n.coords.x * box.width, window.innerWidth - 18)
         y = box.top + n.coords.y * box.height
       }
-      x = Math.min(x, window.innerWidth - 18)
 
       const holder = el("div", "note")
       holder.style.cssText = `left:${x}px;top:${y}px`
@@ -599,15 +601,29 @@ function composer(): HTMLElement {
 
 // ----------------------------------------------------------------- dragging
 
-/** Commit a region's new box: re-capture the elements it now covers. */
-function commitRegion(n: PageNote, box: Box): void {
+/** Client point → fractions of the element a note's coords are measured against. */
+function coordsIn(container: Element | null, at: { x: number; y: number }): { x: number; y: number } | null {
+  const box = container?.getBoundingClientRect()
+  if (!box || !box.width || !box.height) return null
+  return { x: (at.x - box.left) / box.width, y: (at.y - box.top) / box.height }
+}
+
+/**
+ * Commit a region's new box: re-capture the elements it now covers, and land
+ * the pin where the cursor left it rather than back on a corner.
+ */
+function commitRegion(n: PageNote, box: Box, pinAt?: { x: number; y: number }): void {
   const captured = captureRegion(app, box)
-  const next = moveNoteById(notes, n.id, { x: captured.rect.x + captured.rect.w, y: captured.rect.y }, captured.rect)
+  const coords =
+    (pinAt && coordsIn(layeredV2(captured.container, app), pinAt)) ??
+    { x: captured.rect.x + captured.rect.w, y: captured.rect.y }
+  const next = moveNoteById(notes, n.id, coords, captured.rect)
   if (!next) return
   notes = next.notes.map((x) =>
     x.id === n.id ? ({ ...(x as PageNote), anchor: stampViewport(captured.container), region: captured }) : (x as PageNote),
   )
   regionOverride = null
+  pinOverride = null
   save()
   render()
 }
@@ -640,14 +656,12 @@ function dragNote(n: PageNote) {
       const dx = ev.clientX - sx
       const dy = ev.clientY - sy
       if (Math.abs(dx) + Math.abs(dy) > 3) moved = true
+      if (!moved) return
+      // The pin goes where the cursor goes, whether the grab landed on the
+      // pin itself or anywhere in its region.
+      pinOverride = { id: n.id, at: { x: ev.clientX, y: ev.clientY } }
       if (startBox) {
         regionOverride = { id: n.id, box: { ...startBox, left: startBox.left + dx, top: startBox.top + dy } }
-      } else if (box) {
-        const next = moveNoteById(notes, n.id, {
-          x: c0.x + dx / box.width,
-          y: c0.y + dy / box.height,
-        })
-        if (next) notes = next.notes as PageNote[]
       }
       render()
     }
@@ -656,12 +670,25 @@ function dragNote(n: PageNote) {
       window.removeEventListener("pointerup", up)
       if (!moved) {
         regionOverride = null
+        pinOverride = null
         openPin = openPin === n.id ? null : n.id
         render()
         return
       }
-      if (regionOverride) commitRegion(n, regionOverride.box)
-      else save()
+      const at = pinOverride?.at
+      if (regionOverride) {
+        commitRegion(n, regionOverride.box, at)
+        return
+      }
+      // A plain pin: store the cursor as fractions of the element it hangs off.
+      const coords = at ? coordsIn(target, at) : null
+      if (coords) {
+        const next = moveNoteById(notes, n.id, coords)
+        if (next) notes = next.notes as PageNote[]
+      }
+      pinOverride = null
+      save()
+      render()
     }
     window.addEventListener("pointermove", move)
     window.addEventListener("pointerup", up)
@@ -695,12 +722,14 @@ function resizeRegion(n: PageNote, cx: 0 | 1, cy: 0 | 1) {
           height: Math.abs(h),
         },
       }
+      // Resizing is a gesture too: the pin rides the corner being pulled.
+      pinOverride = { id: n.id, at: { x: ev.clientX, y: ev.clientY } }
       render()
     }
     const up = () => {
       window.removeEventListener("pointermove", move)
       window.removeEventListener("pointerup", up)
-      if (regionOverride) commitRegion(n, regionOverride.box)
+      if (regionOverride) commitRegion(n, regionOverride.box, pinOverride?.at)
     }
     window.addEventListener("pointermove", move)
     window.addEventListener("pointerup", up)
@@ -768,7 +797,10 @@ window.addEventListener("pointerup", (e) => {
       el: app,
       anchor: stampViewport(captured.container),
       region: captured,
-      coords: { x: captured.rect.x + captured.rect.w, y: captured.rect.y },
+      // The pin lands where the drag ended, not on a corner of what it drew.
+      coords:
+        coordsIn(layeredV2(captured.container, app), { x: e.clientX, y: e.clientY }) ??
+        { x: captured.rect.x + captured.rect.w, y: captured.rect.y },
       rect: captured.rect,
     }
   } else {
