@@ -33,13 +33,17 @@ import { GhostPin } from "../../../src/adapters/solid/chrome/GhostPin"
     </nav>
 
     {/*
-      A phone reads top-down: the copy takes the head of the page and the
-      performance gets the whole band underneath it. Centring the copy the way
-      a desktop does would put it exactly where the note has to land, and the
-      note would cover it. From sm up there is room for both, so the copy goes
-      back to the optical centre.
+      A phone is one column and two rows: the copy, then the performance. Row
+      two is the stage, and it is a real box — the bottom padding keeps it off
+      the HUD, so its rect is the whole answer to where a note may go. Layering
+      the copy over the canvas and floring the note by measurement was how the
+      note ended up on the subhead.
+
+      Display stays `grid` at every width, because `grid` and `flex` in one
+      class list resolve by stylesheet order rather than by breakpoint. From sm
+      up the rows collapse and the copy returns to the optical centre.
     */}
-    <div class="pointer-events-none absolute inset-0 z-30 flex items-start justify-center px-6 pt-[76px] sm:items-center sm:pt-0">
+    <div class="pointer-events-none absolute inset-0 z-30 grid grid-rows-[auto_1fr] gap-y-4 px-6 pt-[76px] pb-[76px] sm:grid-rows-none sm:content-center sm:pt-0 sm:pb-0">
       <div data-hero-copy class="pointer-events-auto mx-auto w-full min-w-0 max-w-[580px] text-center">
         <h1
           data-steer="HeroTitle"
@@ -56,6 +60,10 @@ import { GhostPin } from "../../../src/adapters/solid/chrome/GhostPin"
         </div>
         <p class="mt-3 text-[14px] text-zinc-400 max-sm:hidden short:hidden">MIT. Runs in your dev server. Ships nothing to production.</p>
       </div>
+
+      {/* Row two. Empty on purpose: the hero canvas lays its performance out
+          inside this box, which only the grid knows the size of. */}
+      <div data-hero-stage class="min-h-0 sm:hidden"></div>
     </div>
 
     <div class="absolute bottom-7 right-6 z-30 hidden text-[13px] text-zinc-400 lg:block sm:right-8">

@@ -205,32 +205,37 @@ const PANEL_H = 300
 const PANEL_H_XS = 200
 const panelHeight = () => (window.innerWidth < 640 ? PANEL_H_XS : PANEL_H)
 
+/** Air between a tile and the note hanging off it. */
+const NOTE_GAP = 10
+
 /**
- * The band the performance is allowed to use. On a phone the copy owns the top
- * of the page and the HUD owns the floor, so the stage is what is left between
- * them. Both edges are measured rather than guessed: the copy's height moves
- * with the viewport, and a constant that was right at one size was covering the
- * subhead at every other.
+ * The phone stage: row two of the hero grid, read straight off the DOM. The
+ * grid already knows where the copy ends and where the HUD's reserved band
+ * begins, so nothing here has to derive either.
  */
-const COPY_GAP = 12
-const stageTop = () => {
-  const copy = document.querySelector("[data-hero-copy]")?.getBoundingClientRect().bottom
-  return copy ? copy + COPY_GAP : 16
+interface Rect {
+  top: number
+  h: number
 }
-const stageBottom = () =>
-  (document.querySelector("[data-landing-peek]")?.getBoundingClientRect().top ?? window.innerHeight) - 12
+const stageRect = (): Rect => {
+  const r = document.querySelector("[data-hero-stage]")?.getBoundingClientRect()
+  return r ? { top: r.top, h: r.height } : { top: 0, h: 0 }
+}
 
 /** On a phone the note is wider than the gap beside any tile, so it can only
  *  go under the thing it is about. `clear` is that thing's box. */
-const clamp = (p: Point, clear?: Box): Point => {
+const clamp = (p: Point, clear?: Box, stage?: Rect): Point => {
   const x = Math.max(16, Math.min(p.x, window.innerWidth - panelWidth() - 16))
   const xs = window.innerWidth < 640
-  const lo = xs ? Math.max(stageTop(), clear ? clear.y + clear.h + 10 : 0) : 16
-  const hi = (xs ? stageBottom() : window.innerHeight) - panelHeight() - 12
-  // Too short to hold a whole note: keep the top of it under the copy anyway
-  // and let the tail run beneath the HUD, which draws over it. Riding up onto
-  // the headline is the one outcome worse than being clipped.
-  if (lo > hi) return { x, y: lo }
+  if (!xs || !stage) {
+    const hi = window.innerHeight - PANEL_H - 12
+    return { x, y: Math.min(Math.max(p.y, 16), Math.max(16, hi)) }
+  }
+  // The stage reserves the note's room below the tile, so the note lands in
+  // the space flexbox already set aside for it.
+  const lo = clear ? clear.y + clear.h + NOTE_GAP : stage.top
+  const hi = stage.top + stage.h - PANEL_H_XS
+  if (lo > hi) return { x, y: Math.max(stage.top, hi) }
   return { x, y: Math.min(Math.max(p.y, lo), hi) }
 }
 
@@ -238,9 +243,9 @@ export default function HeroCanvas() {
   const [wide, setWide] = createSignal(true)
   const [narrow, setNarrow] = createSignal(false)
   const [staged, setStaged] = createSignal(SCENES[0].id)
-  /** Where the phone stage starts, in px. Measured off the copy, so a wrapped
-   *  headline or an edited subhead moves the tiles instead of colliding. */
-  const [stage, setStage] = createSignal(0)
+  /** Row two's box. Measured, because only the grid knows how tall it is once
+   *  the copy above it has wrapped. */
+  const [stage, setStage] = createSignal<Rect>({ top: 0, h: 0 })
   const [cursor, setCursor] = createSignal<Point>({ x: 0, y: 0 })
   const [cursorOn, setCursorOn] = createSignal(false)
   const [pressed, setPressed] = createSignal(false)
@@ -273,12 +278,9 @@ export default function HeroCanvas() {
   const isDraft = (id: string) => !refined().includes(id)
 
   /** Three tiers: desktop scatter, tablet scatter, phone edges. */
-  const spotOf = (s: Specimen) =>
-    wide()
-      ? s.at
-      : narrow()
-        ? { ...(s.atXs ?? s.atSm ?? s.at), top: `${stage()}px` }
-        : (s.atSm ?? s.at)
+  // A phone tile is laid out by the stage's flexbox, not placed by hand, so it
+  // has no spot of its own.
+  const spotOf = (s: Specimen) => (wide() ? s.at : narrow() ? {} : (s.atSm ?? s.at))
   const widthOf = (s: Specimen) =>
     wide() ? s.width : narrow() ? (s.widthXs ?? Math.min(s.width, 186)) : Math.min(s.width, 210)
 
@@ -411,7 +413,7 @@ export default function HeroCanvas() {
     // point of a pull, the click point of a tap. Never a corner of the box.
     const foot = cursor()
     setPin({ x: foot.x, y: foot.y, label: String(index + 1) })
-    const panel = clamp({ x: foot.x, y: foot.y + 16 }, narrow() ? box : undefined)
+    const panel = clamp({ x: foot.x, y: foot.y + NOTE_GAP }, narrow() ? box : undefined, stage())
     setPending({ x: panel.x, y: panel.y, selector: scene.selector, text: "" })
     await sleep(260)
     await typeOut(scene.note)
@@ -500,10 +502,10 @@ export default function HeroCanvas() {
     const onXs = (e: MediaQueryListEvent) => setNarrow(e.matches)
     xs.addEventListener("change", onXs)
 
-    // The copy is laid out by the page, not by this island, so the stage can
-    // only be known once it has been measured. Re-measured on resize because a
-    // rotation or an address bar collapsing rewraps the headline.
-    const measure = () => setStage(stageTop())
+    // The stage is laid out by the page, not by this island, so it can only be
+    // known once measured. Re-measured on resize because a rotation or an
+    // address bar collapsing rewraps the copy above it.
+    const measure = () => setStage(stageRect())
     measure()
     window.addEventListener("resize", measure)
     window.addEventListener("orientationchange", measure)
@@ -551,13 +553,32 @@ export default function HeroCanvas() {
 
   return (
     <>
-      <div class="pointer-events-none absolute inset-0">
+      {/*
+        A desktop scatters its tiles across the whole canvas by hand. A phone
+        has one tile at a time, so the layer shrinks to the stage and lets
+        flexbox do the placing: the tile and the room its note will need are
+        centred in row two as a single block. Nothing here knows how tall a
+        tile is, which is why the space below the note stopped being dead.
+
+        Centred *safely*: on a phone too short to hold the block, plain
+        centring would overflow it in both directions and push the tile up
+        into the copy. Safe centring falls back to the top of the stage, so
+        the overrun goes downward, under the HUD, where the HUD covers it.
+      */}
+      <div
+        class={`pointer-events-none absolute inset-0 ${
+          narrow() ? "flex flex-col justify-center-safe" : ""
+        }`}
+        style={narrow() ? { top: `${stage().top}px`, height: `${stage().h}px`, bottom: "auto" } : undefined}
+      >
         <For each={SPECIMENS}>
           {(s, i) => (
             <div
               ref={(el) => tiles.set(s.id, el)}
-              class={`pointer-events-auto absolute ${s.small ? "hidden xl:block" : ""} ${
-                narrow() && (s.hideXs || (SCENE_IDS.has(s.id) && staged() !== s.id)) ? "hidden" : ""
+              class={`pointer-events-auto absolute max-sm:static max-sm:shrink-0 ${
+                s.small ? "hidden xl:block" : ""
+              } ${narrow() && (s.hideXs || (SCENE_IDS.has(s.id) && staged() !== s.id)) ? "hidden" : ""} ${
+                s.side === "right" ? "max-sm:mr-[5%] max-sm:self-end" : "max-sm:ml-[5%] max-sm:self-start"
               }`}
               style={{ ...spotOf(s), width: `${widthOf(s)}px` }}
             >
@@ -581,6 +602,11 @@ export default function HeroCanvas() {
             </div>
           )}
         </For>
+        {/* The note is absolutely positioned and cannot be a flex child, so its
+            room is held open by a spacer. This is what centres the tile. */}
+        <Show when={narrow()}>
+          <div class="shrink-0" style={{ height: `${PANEL_H_XS + NOTE_GAP}px` }} aria-hidden="true" />
+        </Show>
       </div>
 
       {/* Everything the cursor makes sits above the vignette. */}

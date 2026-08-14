@@ -30,7 +30,7 @@ export function LandingPeek(props: LandingPeekProps) {
   const benchHref = () => props.benchHref ?? "/__steer"
 
   return (
-    <div data-landing-peek class="pointer-events-none fixed inset-x-4 bottom-4 z-[80] flex justify-center">
+    <div class="pointer-events-none fixed inset-x-4 bottom-4 z-[80] flex justify-center">
       <div class="glass pointer-events-auto flex max-w-full items-center gap-1 rounded-full p-1">
         <span
           class="flex h-10 shrink-0 items-center gap-2 px-3.5 font-mono text-base font-semibold text-zinc-700 tabular-nums"
