@@ -41,20 +41,21 @@
     <div class="wrap">
       <h1>steer-ui: how it reaches a project</h1>
       <p class="sub">
-        Three front doors, one set of instructions, and an install whose whole trick is how
-        little of steer-ui the host actually compiles. That is what lets the same bench serve
-        a Solid, React, Vue or Svelte project.
+        One line, pasted into whatever agent you already use. Everything after it is the
+        agent's problem, not yours. If any step needs you to decide something, wait for
+        something, or debug something, the install has already failed.
       </p>
 
       <div class="legend">
         <span class="key"><span class="swatch" style="background:#fff"></span> built and verified</span>
         <span class="key"><span class="swatch" style="background:repeating-linear-gradient(45deg,#fff,#fff 4px,#f4f4f5 4px,#f4f4f5 8px)"></span> designed, not shipped yet</span>
+        <span class="key"><span class="swatch" style="background:#fafafa;border-style:dashed"></span> the user never sees this</span>
         <span class="key"><span class="swatch" style="background:#eef2ff;border-color:#c7d2fe"></span> compiled by the host</span>
         <span class="key"><span class="swatch" style="background:#ecfdf5;border-color:#a7f3d0"></span> served, never compiled</span>
       </div>
 
       <div class="card">
-        <svg viewBox="0 0 1240 1262" role="img" aria-label="How steer-ui is distributed and what an install puts into a host project">
+        <svg viewBox="0 0 1240 1322" role="img" aria-label="How steer-ui is distributed and what an install puts into a host project">
           <defs>
             <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
               <path d="M 0 0 L 10 5 L 0 10 z" fill="#a1a1aa" />
@@ -73,142 +74,135 @@
           </defs>
 
           <!-- ================= 1. three doors ================= -->
-          <text class="lane" x="60" y="40">1 . THREE FRONT DOORS, ONE SET OF INSTRUCTIONS</text>
+          <text class="lane" x="60" y="40">1 . THE DOOR</text>
 
-          <rect class="todo" x="60" y="58" width="356" height="112" rx="16" />
-          <text class="t2" x="84" y="90">Paste a prompt</text>
-          <text class="p" x="84" y="114">Works in any agent with a text box.</text>
-          <text class="m" x="84" y="140">read steerui.com/install.md</text>
+          <rect class="todo" x="60" y="58" width="1120" height="128" rx="16" />
+          <text class="t" x="96" y="98">Paste one line into any agent</text>
+          <text class="m" x="96" y="130" style="font-size:16px;fill:#18181b">Install steer-ui in this project: read steerui.com/install.md and follow it.</text>
+          <text class="p" x="96" y="158">No account, no key, no choice to make. Works in whatever you already have open.</text>
 
-          <rect class="todo" x="442" y="58" width="356" height="112" rx="16" />
-          <text class="t2" x="466" y="90">The skills registry</text>
-          <text class="p" x="466" y="114">75+ agents. Blocked on one YAML line.</text>
-          <text class="m" x="466" y="140">npx skills add andresCamp/steer-ui</text>
+          <rect class="box" x="60" y="200" width="1120" height="46" rx="12" fill="#fafafa" />
+          <text class="p" x="96" y="229">If you would rather type a command: npx steer-ui init, or npx skills add for agents that read a skills registry. Same install, mentioned in the README, not on the page.</text>
 
-          <rect class="todo" x="824" y="58" width="356" height="112" rx="16" />
-          <text class="t2" x="848" y="90">npm</text>
-          <text class="p" x="848" y="114">The deterministic path. Not published.</text>
-          <text class="m" x="848" y="140">npx steer-ui init</text>
-
-          <path class="flow" d="M 238 178 V 206 H 620" />
-          <path class="flow" d="M 620 178 V 206" />
-          <path class="flow" d="M 1002 178 V 206 H 620" />
-          <path class="flow" d="M 620 206 V 236" marker-end="url(#a)" />
+          <path class="flow" d="M 620 254 V 288" marker-end="url(#a)" />
 
           <!-- ================= 2. the procedure ================= -->
-          <text class="lane" x="60" y="278">2 . ONE PROCEDURE, WHICHEVER DOOR</text>
+          <text class="lane" x="60" y="316">2 . WHAT THE AGENT DOES, WHICH YOU NEVER SEE</text>
 
-          <rect class="todo" x="60" y="296" width="1120" height="150" rx="16" />
+          <rect class="todo" x="60" y="334" width="1120" height="150" rx="16" />
 
-          <rect class="box" x="86" y="326" width="196" height="96" rx="12" />
-          <text class="t2" x="104" y="356">Contract</text>
-          <text class="p" x="104" y="378">The five invariants.</text>
-          <text class="p" x="104" y="398">Always read first.</text>
+          <rect class="box" x="86" y="364" width="196" height="96" rx="12" />
+          <text class="t2" x="104" y="394">Contract</text>
+          <text class="p" x="104" y="416">The five invariants.</text>
+          <text class="p" x="104" y="436">Always read first.</text>
 
-          <path class="flow" d="M 290 374 H 316" marker-end="url(#a)" />
+          <path class="flow" d="M 290 412 H 316" marker-end="url(#a)" />
 
-          <rect class="box" x="324" y="326" width="196" height="96" rx="12" />
-          <text class="t2" x="342" y="356">Detect</text>
-          <text class="p" x="342" y="378">Bundler, framework,</text>
-          <text class="p" x="342" y="398">component dir.</text>
+          <rect class="box" x="324" y="364" width="196" height="96" rx="12" />
+          <text class="t2" x="342" y="394">Detect</text>
+          <text class="p" x="342" y="416">Bundler, framework,</text>
+          <text class="p" x="342" y="436">component dir.</text>
 
-          <path class="flow" d="M 528 374 H 554" marker-end="url(#a)" />
+          <path class="flow" d="M 528 412 H 554" marker-end="url(#a)" />
 
-          <rect class="box" x="562" y="326" width="196" height="96" rx="12" />
-          <text class="t2" x="580" y="356">One recipe</text>
-          <text class="p" x="580" y="378">Vite, Next, or the</text>
-          <text class="p" x="580" y="398">standalone server.</text>
+          <rect class="box" x="562" y="364" width="196" height="96" rx="12" />
+          <text class="t2" x="580" y="394">One recipe</text>
+          <text class="p" x="580" y="416">Vite, Next, or the</text>
+          <text class="p" x="580" y="436">standalone server.</text>
 
-          <path class="flow" d="M 766 374 H 792" marker-end="url(#a)" />
+          <path class="flow" d="M 766 412 H 792" marker-end="url(#a)" />
 
-          <rect x="800" y="326" width="196" height="96" rx="12" fill="#fffbeb" stroke="#fcd34d" />
-          <text class="t2" x="818" y="356">Verify</text>
-          <text class="p" x="818" y="378">Hard gate. Doctor,</text>
-          <text class="p" x="818" y="398">render, note round trip.</text>
+          <rect x="800" y="364" width="196" height="96" rx="12" fill="#ecfdf5" stroke="#a7f3d0" />
+          <text class="t2" x="818" y="394">Check and repair</text>
+          <text class="p" x="818" y="416">Silently. A blank bench</text>
+          <text class="p" x="818" y="436">is the one fatal outcome.</text>
 
-          <path class="flow" d="M 1004 374 H 1030" marker-end="url(#a)" />
+          <path class="flow" d="M 1004 412 H 1030" marker-end="url(#a)" />
 
-          <rect class="box" x="1038" y="326" width="118" height="96" rx="12" />
-          <text class="t2" x="1056" y="356">Receipt</text>
-          <text class="p" x="1056" y="378">What was</text>
-          <text class="p" x="1056" y="398">written.</text>
+          <rect class="box" x="1038" y="364" width="118" height="96" rx="12" />
+          <text class="t2" x="1056" y="394">Open it</text>
+          <text class="p" x="1056" y="416">One line</text>
+          <text class="p" x="1056" y="436">back to you.</text>
 
-          <path class="flow" d="M 620 454 V 500" marker-end="url(#a)" />
+          <text class="p" x="60" y="512">The only two things you can hear: "open /__steer", or "your stack is not supported yet, nothing was changed". Never a question, never a checkpoint.</text>
+
+          <path class="flow" d="M 620 528 V 560" marker-end="url(#a)" />
 
           <!-- ================= 3. what lands in the host ================= -->
-          <text class="lane" x="60" y="536">3 . WHAT AN INSTALL PUTS IN THE PROJECT</text>
+          <text class="lane" x="60" y="596">3 . WHAT IT LEAVES BEHIND, AND HOW EASILY IT GOES AWAY</text>
 
-          <rect class="box" x="60" y="554" width="1120" height="330" rx="18" />
-          <text class="p" x="84" y="584">your-project/</text>
+          <rect class="box" x="60" y="614" width="1120" height="330" rx="18" />
+          <text class="p" x="84" y="644">your-project/</text>
 
           <!-- host compiled -->
-          <rect x="86" y="606" width="500" height="150" rx="14" fill="#eef2ff" stroke="#c7d2fe" />
-          <text class="tag" x="110" y="634" fill="#4f46e5">COMPILED BY THE HOST</text>
-          <text class="m" x="110" y="662">src/steer.ts</text>
-          <text class="p" x="110" y="686">The component glob, which needs the host's own</text>
-          <text class="p" x="110" y="706">resolution and hot reload, plus one Mounter.</text>
-          <text class="t2" x="110" y="736">About 15 lines. That is the whole of it.</text>
+          <rect x="86" y="666" width="500" height="150" rx="14" fill="#eef2ff" stroke="#c7d2fe" />
+          <text class="tag" x="110" y="694" fill="#4f46e5">COMPILED BY THE HOST</text>
+          <text class="m" x="110" y="722">src/steer.ts</text>
+          <text class="p" x="110" y="746">The component glob, which needs the host's own</text>
+          <text class="p" x="110" y="766">resolution and hot reload, plus one Mounter.</text>
+          <text class="t2" x="110" y="796">About 15 lines. That is the whole of it.</text>
 
           <!-- served -->
-          <rect x="614" y="606" width="540" height="150" rx="14" fill="#ecfdf5" stroke="#a7f3d0" />
-          <text class="tag" x="638" y="634" fill="#047857">SERVED, NEVER COMPILED</text>
-          <text class="m" x="638" y="662">tooling/steer-ui/chrome/bench.js  overlay.js  + css</text>
-          <text class="p" x="638" y="686">The bench, the canvas, the notes layer, the overlay.</text>
-          <text class="p" x="638" y="706">Built once, byte identical in every project.</text>
-          <text class="t2" x="638" y="736">A React or Vue host never sees Solid.</text>
+          <rect x="614" y="666" width="540" height="150" rx="14" fill="#ecfdf5" stroke="#a7f3d0" />
+          <text class="tag" x="638" y="694" fill="#047857">SERVED, NEVER COMPILED</text>
+          <text class="m" x="638" y="722">node_modules/steer-ui</text>
+          <text class="p" x="638" y="746">One dependency, not a dozen files copied into your repo.</text>
+          <text class="p" x="638" y="766">Uninstall is one line, which is what makes it safe to try.</text>
+          <text class="t2" x="638" y="796">A React or Vue host never sees Solid.</text>
 
           <!-- data -->
-          <rect class="box" x="86" y="776" width="1068" height="86" rx="14" />
-          <text class="m" x="110" y="806">.steer/</text>
-          <text class="p" x="176" y="806">fixtures and notes, committed to git. The manifest is derived and gitignored.</text>
-          <text class="p" x="110" y="836">Plus an AGENTS.md block, so the next agent to open the repo knows the protocol.</text>
+          <rect class="box" x="86" y="836" width="1068" height="86" rx="14" />
+          <text class="m" x="110" y="868">.steer/</text>
+          <text class="p" x="176" y="868">fixtures and notes, committed to git. The manifest is derived and gitignored.</text>
+          <text class="p" x="110" y="898">Plus an AGENTS.md block, so the next agent to open the repo knows the protocol.</text>
 
           <!-- ================= 4. status ================= -->
-          <text class="lane" x="60" y="936">4 . WHAT THAT BUYS, AND WHAT IS STILL MISSING</text>
+          <text class="lane" x="60" y="996">4 . WHAT THAT BUYS, AND WHAT IS STILL MISSING</text>
 
-          <rect class="box" x="60" y="954" width="1120" height="286" rx="18" />
+          <rect class="box" x="60" y="1014" width="1120" height="286" rx="18" />
 
-          <text class="p" x="308" y="994" text-anchor="middle">Solid</text>
-          <text class="p" x="516" y="994" text-anchor="middle">React</text>
-          <text class="p" x="724" y="994" text-anchor="middle">Vue</text>
-          <text class="p" x="932" y="994" text-anchor="middle">Svelte</text>
+          <text class="p" x="308" y="1054" text-anchor="middle">Solid</text>
+          <text class="p" x="516" y="1054" text-anchor="middle">React</text>
+          <text class="p" x="724" y="1054" text-anchor="middle">Vue</text>
+          <text class="p" x="932" y="1054" text-anchor="middle">Svelte</text>
 
-          <line x1="86" y1="1012" x2="1154" y2="1012" stroke="rgba(0,0,0,.08)" />
+          <line x1="86" y1="1072" x2="1154" y2="1072" stroke="rgba(0,0,0,.08)" />
 
-          <text class="t2" x="110" y="1048">Mounter</text>
-          <text class="p" x="110" y="1068">how a component is instantiated</text>
-          <text class="t" x="308" y="1048" text-anchor="middle" fill="#059669">passes</text>
-          <text class="t" x="516" y="1048" text-anchor="middle" fill="#059669">passes</text>
-          <text class="t" x="724" y="1048" text-anchor="middle" fill="#059669">passes</text>
-          <text class="t" x="932" y="1048" text-anchor="middle" fill="#059669">passes</text>
-          <text class="p" x="1064" y="1048" text-anchor="middle">13 invariants</text>
+          <text class="t2" x="110" y="1108">Mounter</text>
+          <text class="p" x="110" y="1128">how a component is instantiated</text>
+          <text class="t" x="308" y="1108" text-anchor="middle" fill="#059669">passes</text>
+          <text class="t" x="516" y="1108" text-anchor="middle" fill="#059669">passes</text>
+          <text class="t" x="724" y="1108" text-anchor="middle" fill="#059669">passes</text>
+          <text class="t" x="932" y="1108" text-anchor="middle" fill="#059669">passes</text>
+          <text class="p" x="1064" y="1108" text-anchor="middle">13 invariants</text>
 
-          <line x1="86" y1="1082" x2="1154" y2="1082" stroke="rgba(0,0,0,.08)" />
+          <line x1="86" y1="1142" x2="1154" y2="1142" stroke="rgba(0,0,0,.08)" />
 
-          <text class="t2" x="110" y="1118">Extractor</text>
-          <text class="p" x="110" y="1138">how props become knobs</text>
-          <text class="t" x="308" y="1118" text-anchor="middle" fill="#059669">tsx</text>
-          <text class="t" x="516" y="1118" text-anchor="middle" fill="#059669">tsx</text>
-          <text class="t" x="724" y="1118" text-anchor="middle" fill="#059669">sfc</text>
-          <text class="t" x="932" y="1118" text-anchor="middle" fill="#059669">sfc</text>
-          <text class="p" x="1064" y="1118" text-anchor="middle">no compiler needed</text>
+          <text class="t2" x="110" y="1178">Extractor</text>
+          <text class="p" x="110" y="1198">how props become knobs</text>
+          <text class="t" x="308" y="1178" text-anchor="middle" fill="#059669">tsx</text>
+          <text class="t" x="516" y="1178" text-anchor="middle" fill="#059669">tsx</text>
+          <text class="t" x="724" y="1178" text-anchor="middle" fill="#059669">sfc</text>
+          <text class="t" x="932" y="1178" text-anchor="middle" fill="#059669">sfc</text>
+          <text class="p" x="1064" y="1178" text-anchor="middle">no compiler needed</text>
 
-          <line x1="86" y1="1152" x2="1154" y2="1152" stroke="rgba(0,0,0,.08)" />
+          <line x1="86" y1="1212" x2="1154" y2="1212" stroke="rgba(0,0,0,.08)" />
 
-          <text class="t2" x="110" y="1188">A real host, end to end</text>
-          <text class="p" x="110" y="1208">the only test that finds the real bugs</text>
-          <text class="t" x="308" y="1188" text-anchor="middle" fill="#059669">yes</text>
-          <text class="t" x="516" y="1188" text-anchor="middle" fill="#059669">yes</text>
-          <text class="t" x="724" y="1188" text-anchor="middle" fill="#059669">yes</text>
-          <text class="t" x="932" y="1188" text-anchor="middle" fill="#a1a1aa">not yet</text>
-          <text class="p" x="1064" y="1188" text-anchor="middle">found 8 defects</text>
+          <text class="t2" x="110" y="1248">A real host, end to end</text>
+          <text class="p" x="110" y="1268">the only test that finds the real bugs</text>
+          <text class="t" x="308" y="1248" text-anchor="middle" fill="#059669">yes</text>
+          <text class="t" x="516" y="1248" text-anchor="middle" fill="#059669">yes</text>
+          <text class="t" x="724" y="1248" text-anchor="middle" fill="#059669">yes</text>
+          <text class="t" x="932" y="1248" text-anchor="middle" fill="#a1a1aa">not yet</text>
+          <text class="p" x="1064" y="1248" text-anchor="middle">found 8 defects</text>
         </svg>
       </div>
 
       <footer>
-        Adding a framework used to mean porting a 1,000 line canvas. It now means one Mounter
-        and one Extractor, both small, both held to a shared contract. Nothing in row 1 has
-        shipped yet, which is the gap between this being real and being usable by anyone else.
+        The bar is that a person pastes one line and gets a working bench, or hears in one
+        sentence that their stack is not supported and nothing was touched. Anything in
+        between loses them. Nothing in row 1 has shipped yet, which is the whole gap between
+        this being real and being usable by anyone but me.
       </footer>
     </div>
   </body>
