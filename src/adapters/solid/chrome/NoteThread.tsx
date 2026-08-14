@@ -27,7 +27,7 @@ export function NoteThread(props: NoteThreadProps) {
   )
   return (
     <div
-      class="glass w-80 rounded-2xl p-4"
+      class="glass w-80 max-w-full rounded-2xl p-4"
       onClick={(e) => e.stopPropagation()}
       onPointerDown={(e) => e.stopPropagation()}
     >

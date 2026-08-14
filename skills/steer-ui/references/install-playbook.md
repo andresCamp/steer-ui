@@ -5,49 +5,57 @@ Stack recipes for instantiating steer-ui into a host. The lab is `~/onc9-systems
 ## Detection checklist
 
 - Bundler: `vite.config.*` present? Vite gets the plugin; anything else gets the standalone server + proxy (below).
-- Framework: `solid-js` or `react` in deps? Both have full render surfaces. Svelte/Vue do not (lab work; be honest and stop).
+- Framework: which Mounter does the host need (`solid-js`, `react`)? The bench itself is the same prebuilt chrome for every host, so a framework is a Mounter (~40 lines), not a surface. Vue and Svelte mounters do not exist yet (lab work; be honest and stop).
 - Component dir: where do reusable components live? (`src/components` default; anything else becomes the `componentDir` option.)
-- Router: the Solid surface needs `@solidjs/router`; the React surface needs `react-router` v7 (`useParams`/`useSearchParams`/`Link` from the `react-router` package).
-- Styling: Tailwind v4? The surfaces use Tailwind classes plus small CSS blocks (`.glass`, `.smooth-corners`, `.canvas-dots`, `.rise-in`). Without Tailwind the UI functions but loses its register; say so and let the human decide.
-- Icons: `lucide-solid` or `lucide-react` (7 icons). Install or accept.
+- Router: nothing to add. The chrome bundles its own router and owns the `/__steer` document; it never touches the host's routing.
+- Styling: nothing to do. The chrome ships its own CSS, and the overlay's stylesheet deliberately omits Tailwind preflight so it cannot reset the host app's styles. The host's own stylesheet is loaded into the bench document so host components look the way they do in the app.
+- Icons: nothing to install. They are bundled into the chrome.
 - Prop types imported from other modules or built from intersections? Turn on `typecheck: true` (costs a TS program per regeneration; worth it whenever knobs come back `unsupported`).
 
 ## Recipe: Vite host (Solid or React)
 
+There is no surface to copy any more. The bench and the overlay are prebuilt
+assets the plugin serves; the host compiles its component glob and one Mounter.
+
 1. **Copy the engine** to `tooling/steer-ui/`:
    - `src/core/*` -> `tooling/steer-ui/core/`
    - `src/ports/index.ts` -> `tooling/steer-ui/ports/index.ts`
-   - `src/adapters/{node-fs.ts,http.ts,vite.ts}` -> `tooling/steer-ui/`
+   - `src/adapters/{node-fs.ts,http.ts,vite.ts,client.ts}` -> `tooling/steer-ui/`
+   - `src/adapters/mount/<framework>.ts` -> `tooling/steer-ui/mount/`
+   - `dist/chrome/*` -> `tooling/steer-ui/chrome/` (built artifacts, not source)
    - Fix relative imports in the adapters: `../core/...` and `../ports` become `./core/...` and `./ports`.
-2. **Copy the surface** to `src/steer/`:
-   - Solid: `src/adapters/client.ts` + `src/adapters/solid/{data.ts,SteerIndex.tsx,SteerComponent.tsx}` -> `src/steer/`
-   - React: `src/adapters/client.ts` + `src/adapters/react/{data.ts,SteerIndex.tsx,SteerComponent.tsx}` -> `src/steer/`
-   - Fix data.ts imports: `../../core/...` -> `../../tooling/steer-ui/core/...`; `../client` -> `./client`.
-3. **Registry glue** at `src/steer/register.ts` (adjust the glob to the host's component dir, author to the human's name):
+2. **Register entry** at `src/steer.ts`. This is the ONLY host-compiled part.
+   Adjust the glob to the host's component dir and the author to the human's name:
    ```ts
-   import { registerComponents } from "./data"
-   registerComponents(import.meta.glob("../components/**/*.tsx", { eager: true }) as Record<
-     string,
-     Record<string, unknown>
-   >, { author: "<human>" })
+   import { publishRegistration } from "../tooling/steer-ui/core/bridge"
+   import { solidMounter } from "../tooling/steer-ui/mount/solid"
+
+   publishRegistration(globalThis, {
+     modules: import.meta.glob("./components/**/*.tsx", { eager: true }) as Record<
+       string,
+       Record<string, unknown>
+     >,
+     mounter: solidMounter,
+     author: "<human>",
+   })
    ```
-4. **Wire the plugin** in `vite.config.ts`:
+3. **Wire the plugin** in `vite.config.ts` (the export is `steer`):
    ```ts
-   import { steer-ui } from "./tooling/steer-ui/vite"
+   import { steer } from "./tooling/steer-ui/vite"
    plugins: [/* framework plugin */, tailwindcss(), steer({ componentDir: "src/components", typecheck: true })]
    ```
-   Pass `excludeDirs: ["src/steer"]` only if the surface lives elsewhere (that value is the default).
-5. **Do not mount steer-ui in the host router or App.** The plugin is `apply: "serve"`: it injects the overlay via `transformIndexHtml` and serves `/__steer` as its own HTML entry. The register module (`src/steer.ts`) is imported only by that virtual bench entry. If a host file imports `src/steer` or `SteerIndex`, it will ship. That is a bug.
-6. **Tailwind sources**: if the surface files live outside Tailwind's auto-detected content, add `@source "<relative path>";` after `@import "tailwindcss";`. Copy the `.glass`, `.smooth-corners`, `.canvas-dots`, `.rise-in` blocks from the lab's `playground/app/src/app.css`.
-7. **Scaffold `.steer/`**: create `fixtures/` and `notes/` (empty is fine), append `.steer/manifest.json` (path-adjusted) to `.gitignore`.
-8. **CLAUDE.md**: inject the block from `claude-md-block.md`.
-9. **Verify**: dev server up; `curl /__steer/api/doctor` passes; Playwright renders `/__steer`; create + resolve a scratch note via the API; delete the scratch file.
+4. **Do not mount steer-ui in the host router or App.** The plugin is `apply: "serve"`: it injects the overlay as a prebuilt script via `transformIndexHtml` and serves `/__steer` as its own HTML entry. `src/steer.ts` is imported only by that virtual host entry. If a host file imports it directly, it will ship. That is a bug.
+5. **Scaffold `.steer/`**: create `fixtures/` and `notes/` (empty is fine), append `.steer/manifest.json` (path-adjusted) to `.gitignore`.
+6. **AGENTS.md**: inject the block from `claude-md-block.md` (CLAUDE.md as an alias for Claude Code).
+7. **Verify**: dev server up; `curl /__steer/api/doctor` passes; Playwright renders `/__steer`; create + resolve a scratch note via the API; delete the scratch file.
 
 Idempotency: every step checks before writing (file exists with drift receipt -> compare, refresh if the lab moved; config lines present -> skip; CLAUDE block present -> replace between markers).
 
 ## Recipe: non-Vite host (Next, webpack, express)
 
-The engine runs as a standalone API server; the host proxies to it and mounts the React surface on its own routes.
+The engine runs as a standalone API server and the host proxies to it. The bench
+is the same prebuilt chrome, served as static files, so there is no surface to
+port and no Solid in the host's build.
 
 1. Copy the engine as above, but take `node-server.ts` instead of `vite.ts`.
 2. Run it alongside dev (a `steer-ui:api` script): 
@@ -60,13 +68,28 @@ The engine runs as a standalone API server; the host proxies to it and mounts th
 3. Proxy `/__steer/api/*` to it:
    - Next (`next.config`): `rewrites: [{ source: "/__steer/api/:path*", destination: "http://localhost:5199/__steer/api/:path*" }]`
    - express: `http-proxy-middleware` on the same path.
-4. Mount the React surface: Next app router gets a client page at `app/__steer/[[...slug]]/page.tsx` that renders SteerIndex/SteerComponent from the copied surface (the surface uses react-router hooks; in Next, wrap with a MemoryRouter synced to the pathname, or mount the surface in a tiny standalone Vite app if the host prefers isolation). This mapping has NOT been exercised against a real Next host yet; expect to promote fixes back.
-5. `.steer/` scaffold, CLAUDE.md, and verification are identical to the Vite recipe.
+4. Serve the chrome. Copy `tooling/steer-ui/chrome/*` to the host's static
+   directory (Next: `public/__steer/chrome/`), so `bench.js`, `bench.css`,
+   `overlay.js` and `overlay.css` are reachable at `/__steer/chrome/`.
+5. Serve the bench document at `/__steer/*`. It is a static HTML page with three
+   tags: the chrome stylesheet, the host's register entry, and the chrome
+   script. Load order does not matter, the bridge queues whichever lands first.
+6. Inject the overlay into the host's app pages in dev: a `<link>` for
+   `overlay.css` and a `<script type="module">` for `overlay.js`. No framework
+   code enters the host build; the overlay only reads the rendered DOM.
+7. The register entry is compiled by the host. Next has no `import.meta.glob`,
+   so use `require.context` or generate the component map at dev-server start.
+8. `.steer/` scaffold, AGENTS.md, and verification are identical to the Vite recipe.
+
+Steps 4 to 7 have NOT been exercised against a real Next host yet; expect to
+promote fixes back. What has changed is that the hard part is gone: the bench no
+longer has to be ported to the host's framework.
 
 ## Recipe gaps (be honest, do not improvise at install time)
 
-- **Svelte / Vue hosts**: need their own extractors (compiler APIs) and surfaces. Lab work; propose it, build it in the lab with its own playground app, then install.
+- **Svelte / Vue hosts**: need an extractor (compiler APIs) and a Mounter. The Mounter is ~40 lines against a shared contract suite, and the bench is the same prebuilt chrome, so this is much smaller than it used to be. Still lab work: build it in the lab against `adapters/mount/contract.test.ts`, prove it in a playground app, then install.
+- **Overlay-only installs**: the overlay needs no Mounter at all (it reads the host's rendered DOM), so a host with no Mounter yet can still get the live app view and page notes.
 
 ## Uninstall (mirror of install)
 
-Remove in reverse order: routes + register import, `src/steer/`, plugin/server wiring, `tooling/steer-ui/`, `.gitignore` line, CLAUDE.md block (between its markers), orphaned deps (`lucide-*` if nothing else imports them). Then handle `.steer/`: fixtures are cheap to delete with the human's nod; **open notes are feedback: enumerate them with text + author, offer archive to `docs/steer-ui-notes-archive/` vs delete, and default to archive.**
+Remove in reverse order: register entry `src/steer.ts`, plugin/server wiring, `tooling/steer-ui/` (engine, mount, chrome), `.gitignore` line, AGENTS.md/CLAUDE.md block (between its markers). There are no orphaned deps to clean up: the chrome bundles its own. Then handle `.steer/`: fixtures are cheap to delete with the human's nod; **open notes are feedback: enumerate them with text + author, offer archive to `docs/steer-ui-notes-archive/` vs delete, and default to archive.**

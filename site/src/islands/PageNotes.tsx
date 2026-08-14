@@ -3,6 +3,7 @@ import { LandingPeek } from "../components/LandingPeek"
 import { GhostPin } from "../../../src/adapters/solid/chrome/GhostPin"
 import { Pin } from "../../../src/adapters/solid/chrome/Pin"
 import { NoteThread } from "../../../src/adapters/solid/chrome/NoteThread"
+import { Floater } from "../../../src/adapters/solid/chrome/Floater"
 import type { SteerNote } from "../../../src/core/model"
 
 /**
@@ -12,6 +13,9 @@ import type { SteerNote } from "../../../src/core/model"
  */
 
 const KEY = "steerui:page-notes"
+
+/** Viewport margins a note panel may not cross. The bottom clears the peek. */
+const KEEP_OUT = { top: 16, right: 16, bottom: 88, left: 16 }
 
 function load(): SteerNote[] {
   try {
@@ -43,8 +47,6 @@ export default function PageNotes() {
   const [open, setOpen] = createSignal<string | null>(null)
   // Pins held by the cursor, in page space, keyed by note id.
   const [dragging, setDragging] = createSignal<Record<string, { x: number; y: number }>>({})
-
-  let input: HTMLInputElement | undefined
 
   const openNotes = () => notes().filter((n) => n.status === "open")
 
@@ -103,7 +105,6 @@ export default function PageNotes() {
         selector: describe(document.elementFromPoint(e.clientX, e.clientY)),
       })
       disarm()
-      queueMicrotask(() => input?.focus())
     }
 
     window.addEventListener("resize", onResize)
@@ -191,8 +192,12 @@ export default function PageNotes() {
     <>
       <div class="pointer-events-none absolute inset-0 z-40">
         <For each={openNotes()}>
-          {(n, i) => (
+          {(n, i) => {
+            // The thread hangs off this node rather than off coordinates.
+            let pinEl: HTMLSpanElement | undefined
+            return (
             <span
+              ref={pinEl}
               class="pointer-events-auto absolute"
               style={{
                 left: `${pinAt(n).x}px`,
@@ -207,42 +212,62 @@ export default function PageNotes() {
                 onPointerDown={onPinDrag(n)}
               />
               <Show when={open() === n.id}>
-                <div class="note-opaque absolute left-9 top-0">
+                <Floater anchor={() => pinEl} keepOut={KEEP_OUT} class="note-opaque">
                   <NoteThread
                     author={n.author}
                     createdLabel={ago(n.created)}
                     text={n.text}
                     onResolve={() => resolve(n.id)}
                   />
-                </div>
+                </Floater>
               </Show>
             </span>
-          )}
+            )
+          }}
         </For>
 
         <Show when={draft()}>
-          {(d) => (
-            <div
-              class="glass note-opaque pointer-events-auto absolute w-80 rounded-2xl p-4"
-              style={{ left: `${d().x}px`, top: `${d().y}px` }}
+          {(d) => {
+            // The ghost the cursor was carrying becomes a real pin the moment
+            // the spot is chosen, and the composer hangs off that pin. Without
+            // it the note has no visible target while it is being written.
+            let dropEl: HTMLSpanElement | undefined
+            return (
+            <>
+            <span
+              ref={dropEl}
+              class="pointer-events-none absolute"
+              style={{ left: `${d().x}px`, top: `${d().y}px`, transform: "translate(-50%, -50%)" }}
             >
-              <div class="mb-2 font-mono text-base text-zinc-400">{d().selector}</div>
-              <input
-                ref={input}
-                value={text()}
-                onInput={(e) => setText(e.currentTarget.value)}
-                onKeyDown={(e) => e.key === "Enter" && commit()}
-                placeholder="What feels off?"
-                class="w-full rounded-xl bg-black/[0.04] px-3 py-2 text-base outline-none placeholder:text-zinc-400"
-              />
-              <div class="mt-2 flex items-center justify-between font-mono text-base text-zinc-300">
-                <span>enter to save</span>
-                <button type="button" class="hover:text-zinc-500" onClick={() => setDraft(null)}>
-                  cancel
-                </button>
+              <span class="pin-drop block">
+                <Pin label={String(openNotes().length + 1)} />
+              </span>
+            </span>
+            <Floater anchor={() => dropEl} keepOut={KEEP_OUT} class="note-opaque">
+              <div class="glass pointer-events-auto w-80 max-w-full rounded-2xl p-4">
+                <div class="mb-2 font-mono text-base text-zinc-400">{d().selector}</div>
+                <input
+                  // Focus after the frame the popover is promoted in: a
+                  // popover is display:none until then, and hidden elements
+                  // cannot take focus.
+                  ref={(el) => requestAnimationFrame(() => el.focus())}
+                  value={text()}
+                  onInput={(e) => setText(e.currentTarget.value)}
+                  onKeyDown={(e) => e.key === "Enter" && commit()}
+                  placeholder="What feels off?"
+                  class="w-full rounded-xl bg-black/[0.04] px-3 py-2 text-base outline-none placeholder:text-zinc-400"
+                />
+                <div class="mt-2 flex items-center justify-between font-mono text-base text-zinc-300">
+                  <span>enter to save</span>
+                  <button type="button" class="hover:text-zinc-500" onClick={() => setDraft(null)}>
+                    cancel
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            </Floater>
+            </>
+            )
+          }}
         </Show>
       </div>
 

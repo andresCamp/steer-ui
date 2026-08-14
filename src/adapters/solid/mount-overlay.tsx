@@ -349,9 +349,28 @@ function OverlayApp() {
         )}
       </Show>
       <Show when={pending()}>
-        {(p) => (
-          <Floater anchor={() => p().client} keepOut={KEEP_OUT}>
-            <div class="glass w-80 rounded-2xl p-4">
+        {(p) => {
+          // The ghost the cursor was carrying becomes a real pin the moment
+          // the spot is chosen, and the composer hangs off that pin. Without
+          // it the note has no visible target while it is being written.
+          let dropEl: HTMLDivElement | undefined
+          return (
+          <>
+          <div
+            ref={dropEl}
+            class="pointer-events-none fixed z-[70]"
+            style={{
+              left: `${p().client.x}px`,
+              top: `${p().client.y}px`,
+              transform: "translate(-50%, -50%)",
+            }}
+          >
+            <div class="pin-drop">
+              <Pin label={String(openNotes().length + 1)} />
+            </div>
+          </div>
+          <Floater anchor={() => dropEl} keepOut={KEEP_OUT}>
+            <div class="glass w-80 max-w-full rounded-2xl p-4">
               <textarea
                 class="h-20 w-full resize-none bg-transparent text-base leading-relaxed text-zinc-800 outline-none placeholder:text-zinc-300"
                 placeholder="What feels off?"
@@ -394,7 +413,9 @@ function OverlayApp() {
               </div>
             </div>
           </Floater>
-        )}
+          </>
+          )
+        }}
       </Show>
       <Peek
         count={openNotes().length}

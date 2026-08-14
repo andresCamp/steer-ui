@@ -75,3 +75,12 @@ body {
 .rise-in {
   animation: rise-in 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+
+/* A placed note's pin lands where the ghost pin was, so the note has a
+   visible target while it is still being written. */
+@keyframes pin-drop {
+  0% { opacity: 0; transform: scale(0.4) translateY(-10px); }
+  60% { opacity: 1; transform: scale(1.12) translateY(0); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+.pin-drop { animation: pin-drop 340ms cubic-bezier(0.22, 1, 0.36, 1) both; }

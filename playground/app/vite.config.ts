@@ -12,7 +12,6 @@ export default defineConfig({
       extraComponentDirs: ["../../src/adapters/solid/chrome"],
       register: "src/steer.ts",
       styles: "src/app.css",
-      surface: "solid",
     }),
   ],
   server: {

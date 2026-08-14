@@ -1,6 +1,7 @@
 import { createElement } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import type { MountHandle, Mounter } from "../../ports"
+import { materialize } from "../../core/registry"
 
 // No JSX: createElement is what the React transform emits, so this file needs
 // no framework compiler and can ship prebuilt.
@@ -15,13 +16,15 @@ export const reactMounter: Mounter = {
 
   mount(el: HTMLElement, Component: unknown, props: Record<string, unknown>): MountHandle {
     const root: Root = createRoot(el)
-    root.render(createElement(Component as never, props as never))
+    const draw = (values: Record<string, unknown>) =>
+      root.render(createElement(Component as never, materialize(values, reactElement) as never))
+    draw(props)
 
     let live = true
     return {
       update(next: Record<string, unknown>) {
         if (!live) return
-        root.render(createElement(Component as never, next as never))
+        draw(next)
       },
       destroy() {
         if (!live) return

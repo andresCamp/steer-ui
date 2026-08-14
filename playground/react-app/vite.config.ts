@@ -11,7 +11,6 @@ export default defineConfig({
       typecheck: true,
       register: "src/steer.ts",
       styles: "src/app.css",
-      surface: "react",
     }),
   ],
   server: {

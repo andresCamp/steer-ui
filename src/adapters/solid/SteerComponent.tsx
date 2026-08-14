@@ -269,13 +269,6 @@ export function SteerComponent() {
     onCleanup(() => el.removeEventListener("wheel", onWheel))
   }
 
-  /** Bench fractions → a point in client space, read live under pan and zoom. */
-  const benchPoint = (at: { x: number; y: number }) => {
-    const box = benchRef?.getBoundingClientRect()
-    if (!box) return undefined
-    return { x: box.left + at.x * box.width, y: box.top + at.y * box.height }
-  }
-
   /** Client point → bench-relative fractions (may exceed 0..1 off-component). */
   const benchRel = (clientX: number, clientY: number) => {
     const rect = benchRef!.getBoundingClientRect()
@@ -802,14 +795,37 @@ export function SteerComponent() {
                 </For>
 
                 <Show when={pending()}>
-                  {(p) => (
-                    <Floater anchor={() => benchPoint(p().coords)} keepOut={KEEP_OUT}>
-                      <div class="glass w-80 rounded-2xl p-4">
+                  {(p) => {
+                    // The ghost becomes a real pin the moment the spot is
+                    // chosen, and the composer hangs off it. Without it the
+                    // note has no visible target while it is being written.
+                    let dropEl: HTMLDivElement | undefined
+                    return (
+                    <>
+                    <div
+                      ref={dropEl}
+                      class="pointer-events-none absolute z-10"
+                      style={{
+                        left: `${p().coords.x * 100}%`,
+                        top: `${p().coords.y * 100}%`,
+                        transform: `translate(-50%, -50%) scale(${1 / zoom()})`,
+                      }}
+                    >
+                      <div class="pin-drop">
+                        <Pin label={String(openNotes().length + 1)} />
+                      </div>
+                    </div>
+                    <Floater anchor={() => dropEl} keepOut={KEEP_OUT}>
+                      <div class="glass w-80 max-w-full rounded-2xl p-4">
                         <textarea
                           class="h-20 w-full resize-none bg-transparent text-base leading-relaxed text-zinc-800 outline-none placeholder:text-zinc-300"
                           placeholder="What feels off?"
                           value={noteText()}
                           onInput={(e) => setNoteText(e.currentTarget.value)}
+                          // Focus after the frame the popover is promoted in:
+                          // a popover is display:none until then, and hidden
+                          // elements cannot take focus.
+                          ref={(el) => requestAnimationFrame(() => el.focus())}
                           data-steer-note-input
                         />
                         <div class="mt-2 flex items-center justify-between">
@@ -836,7 +852,9 @@ export function SteerComponent() {
                         </div>
                       </div>
                     </Floater>
-                  )}
+                    </>
+                    )
+                  }}
                 </Show>
               </div>
             </div>

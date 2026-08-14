@@ -1,10 +1,10 @@
 import type { Component } from "solid-js"
-import { solidElement } from "../mount/solid"
 import type { SteerComponentSpec, FixtureValue } from "../../core/model"
 import {
   coerceProps as coercePropsCore,
   resolveComponent as resolveComponentCore,
   resolveFixtureValue as resolveFixtureValueCore,
+  deferElement,
 } from "../../core/registry"
 
 // Solid render surface glue: the component registry, fixture-ref rendering,
@@ -66,7 +66,7 @@ export {
 // The one framework-aware step is building the instance, which is exactly
 // Mounter.element. Bound here so callers keep the same signatures.
 
-const element = solidElement
+const element = deferElement
 
 /** A children value: a plain string, or a JSON {"$component": ...} ref. */
 export function resolveFixtureValue(value: FixtureValue): unknown {

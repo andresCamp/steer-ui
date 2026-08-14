@@ -1,4 +1,6 @@
+import fs from "node:fs"
 import path from "node:path"
+import type { ServerResponse } from "node:http"
 import { fileURLToPath } from "node:url"
 import type { Plugin, ViteDevServer } from "vite"
 import { createEngine } from "../core/engine"
@@ -21,17 +23,17 @@ export interface SteerPluginOptions {
   typecheck?: boolean
   /** Host register module (glob). Imported only by the virtual bench entry. */
   register?: string
-  /** Host stylesheet imported by the bench document. */
+  /** Host stylesheet imported by the bench document, so host components look
+   *  the way they do in the app. The chrome's own CSS ships with the chrome. */
   styles?: string
-  /** "solid" (default) or "react". */
-  surface?: "solid" | "react"
 }
 
 const STEER_DIR = ".steer"
-const OVERLAY_ID = "virtual:steer-ui/overlay"
-const BENCH_ID = "virtual:steer-ui/bench"
-const OVERLAY_RESOLVED = "\0" + OVERLAY_ID
-const BENCH_RESOLVED = "\0" + BENCH_ID
+// The only module the HOST compiles: its stylesheet and its register entry.
+// Everything else is the prebuilt chrome, served as a static asset.
+const HOST_ID = "virtual:steer-ui/host"
+const HOST_RESOLVED = "\0" + HOST_ID
+const CHROME_ROUTE = "/__steer/chrome/"
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 
@@ -43,7 +45,6 @@ export function steer(options: SteerPluginOptions = {}): Plugin {
   let engine: SteerEngine
   let root = ""
   let timer: ReturnType<typeof setTimeout> | undefined
-  const surface = options.surface ?? "solid"
 
   const regenerate = () => {
     clearTimeout(timer)
@@ -103,35 +104,30 @@ export function steer(options: SteerPluginOptions = {}): Plugin {
     },
 
     resolveId(id) {
-      if (id === OVERLAY_ID) return OVERLAY_RESOLVED
-      if (id === BENCH_ID) return BENCH_RESOLVED
+      if (id === HOST_ID) return HOST_RESOLVED
     },
 
     load(id) {
-      if (id === OVERLAY_RESOLVED) {
-        const mount = path.resolve(here, surface, "mount-overlay.tsx")
-        return `import { mountOverlay } from ${toImport(mount)}\nmountOverlay()\n`
-      }
-      if (id === BENCH_RESOLVED) {
+      if (id === HOST_RESOLVED) {
         const register = path.resolve(root, options.register ?? "src/steer.ts")
         const styles = path.resolve(root, options.styles ?? "src/app.css")
-        const mount = path.resolve(here, surface, "mount-bench.tsx")
-        return [
-          `import ${toImport(styles)}`,
-          `import ${toImport(register)}`,
-          `import { mountBench } from ${toImport(mount)}`,
-          `mountBench()`,
-        ].join("\n")
+        return [`import ${toImport(styles)}`, `import ${toImport(register)}`].join("\n")
       }
     },
 
     transformIndexHtml(_html, ctx) {
       if (ctx.path.startsWith("/__steer")) return
-      if (surface !== "solid") return
+      // Prebuilt, so it never enters the host's build. The overlay only reads
+      // the host's rendered DOM, so this works in any stack.
       return [
         {
+          tag: "link",
+          attrs: { rel: "stylesheet", href: `${CHROME_ROUTE}overlay.css` },
+          injectTo: "head",
+        },
+        {
           tag: "script",
-          attrs: { type: "module", src: `/@id/${OVERLAY_ID}` },
+          attrs: { type: "module", src: `${CHROME_ROUTE}overlay.js` },
           injectTo: "body",
         },
       ]
@@ -145,6 +141,11 @@ export function steer(options: SteerPluginOptions = {}): Plugin {
       server.middlewares.use(async (req, res, next) => {
         const url = req.url ?? ""
         const pathname = url.split("?")[0] ?? ""
+
+        if (pathname.startsWith(CHROME_ROUTE)) {
+          const served = await serveChrome(pathname, res)
+          if (served) return
+        }
 
         if (isBenchPage(pathname)) {
           const raw = benchHtml()
@@ -167,16 +168,56 @@ function isBenchPage(pathname: string): boolean {
 }
 
 function benchHtml(): string {
+  // Two module graphs meeting in one document. The host entry is compiled by
+  // the host (it needs the host's resolution and HMR for the component glob);
+  // the chrome is a prebuilt asset the host never parses. Load order does not
+  // matter: the bridge queues whichever arrives first.
   return `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>steer</title>
+    <link rel="stylesheet" href="${CHROME_ROUTE}bench.css" />
   </head>
   <body>
     <div id="steer-root"></div>
-    <script type="module" src="/@id/${BENCH_ID}"></script>
+    <script type="module" src="/@id/${HOST_ID}"></script>
+    <script type="module" src="${CHROME_ROUTE}bench.js"></script>
   </body>
 </html>`
+}
+
+const CHROME_TYPES: Record<string, string> = {
+  ".js": "text/javascript",
+  ".css": "text/css",
+  ".map": "application/json",
+}
+
+/** Where the BUILT chrome sits: dist/chrome next to the plugin once published,
+ *  or at the repo root while working in the lab. Probing for the built entry
+ *  rather than the directory matters in the lab, where the plugin sits beside
+ *  the chrome's SOURCE directory and would otherwise match it. */
+function chromeDir(): string | undefined {
+  const candidates = [
+    path.resolve(here, "chrome"),
+    path.resolve(here, "../../dist/chrome"),
+    path.resolve(here, "../../../dist/chrome"),
+  ]
+  return candidates.find((dir) => fs.existsSync(path.join(dir, "bench.js")))
+}
+
+async function serveChrome(pathname: string, res: ServerResponse): Promise<boolean> {
+  const dir = chromeDir()
+  const name = pathname.slice(CHROME_ROUTE.length)
+  // Invariant 4: an unbuilt chrome is a blank bench, so say so out loud.
+  if (!dir) {
+    console.error("[steer] chrome not built. Run `pnpm build:chrome`.")
+    return false
+  }
+  const file = path.resolve(dir, name)
+  if (!file.startsWith(dir) || !fs.existsSync(file)) return false
+  res.setHeader("Content-Type", CHROME_TYPES[path.extname(file)] ?? "application/octet-stream")
+  res.end(await fs.promises.readFile(file))
+  return true
 }

@@ -1,4 +1,4 @@
-import { onCleanup, type JSX } from "solid-js"
+import { onCleanup, onMount, type JSX } from "solid-js"
 import { Portal } from "solid-js/web"
 import {
   autoUpdate,
@@ -28,6 +28,9 @@ export interface FloaterProps {
    * panel must never slide under — the knobs panel, the peek bar.
    */
   keepOut?: Padding
+  /** Classes for the portalled wrapper, which no longer inherits from the
+   *  place the panel was written (`.note-opaque` and friends). */
+  class?: string
   children: JSX.Element
 }
 
@@ -72,7 +75,7 @@ export function Floater(props: FloaterProps) {
    */
   const reference = (): ReferenceElement => ({
     getBoundingClientRect: () => {
-      const at = props.anchor()
+      const at = props.anchor?.()
       if (at instanceof Element) return at.getBoundingClientRect()
       const { x, y } = at ?? { x: 0, y: 0 }
       return { x, y, top: y, left: x, right: x, bottom: y, width: 0, height: 0 }
@@ -80,7 +83,7 @@ export function Floater(props: FloaterProps) {
   })
 
   const update = () => {
-    if (!el || !props.anchor()) return
+    if (!el || !props.anchor?.()) return
     const pad = props.keepOut ?? 12
     void computePosition(reference(), el, {
       strategy: "fixed",
@@ -91,12 +94,19 @@ export function Floater(props: FloaterProps) {
         // guidance: on a narrow viewport, shifting first strands the panel on
         // the wrong side of its anchor.
         flip({ padding: pad, crossAxis: "alignment", fallbackAxisSideDirection: "end" }),
-        shift({ padding: pad }),
+        // crossAxis too, without a limiter: a pin dropped inside a keep-out
+        // band has no in-bounds side to flip to, and containment wins over
+        // staying visually tethered. The panel slides clear and may cover its
+        // own pin, which is what every canvas tool does at the screen edge.
+        shift({ padding: pad, crossAxis: true }),
         size({
           padding: pad,
-          apply({ availableHeight, elements }) {
+          apply({ availableWidth, availableHeight, elements }) {
             const height = Math.max(160, availableHeight)
             Object.assign(elements.floating.style, {
+              // Panels are max-w-full, so capping the wrapper narrows them on
+              // a phone rather than letting them hang off the side.
+              maxWidth: `${Math.max(200, availableWidth)}px`,
               maxHeight: `${height}px`,
               overflowY: elements.floating.scrollHeight > height ? "auto" : "visible",
             })
@@ -111,19 +121,28 @@ export function Floater(props: FloaterProps) {
 
   const attach = (node: HTMLDivElement) => {
     el = node
-    // Manual, not auto: dismissal is ours (Escape, the pin, resolve), and an
-    // auto popover would light-dismiss on the very click that opened it.
-    node.showPopover?.()
+  }
+
+  onMount(() => {
+    const node = el
+    if (!node) return
+    // Top-layer promotion only works once the node is in the live document,
+    // which the Portal has done by the time onMount runs. Manual, not auto:
+    // dismissal is ours (Escape, the pin, resolve), and an auto popover would
+    // light-dismiss on the very click that opened it.
+    if (node.isConnected) node.showPopover?.()
     stop = autoUpdate(reference(), node, update, {
       // The bench anchor moves under a transform, which fires neither scroll
       // nor resize. A frame loop is the only observer that sees that.
       animationFrame: true,
     })
-  }
+  })
 
   onCleanup(() => {
     stop?.()
-    el?.hidePopover?.()
+    // Removing the node dismisses it anyway; hiding an already-closed popover
+    // throws, so only close one that is actually open.
+    if (el?.isConnected && el.matches(":popover-open")) el.hidePopover()
     el = undefined
   })
 
@@ -131,6 +150,7 @@ export function Floater(props: FloaterProps) {
     <Portal mount={document.body}>
       <div
         ref={attach}
+        class={props.class}
         popover="manual"
         style={RESET}
         onPointerDown={(e) => e.stopPropagation()}

@@ -36,7 +36,7 @@ The design serves the five verbs an agent needs against a component library:
 2. **Every state is addressable**: any renderable knob configuration round-trips through the state URL grammar, including composed component children (`$component` refs as JSON in the query, the thing Storybook cannot URL-serialize).
 3. **Feedback is append-preserving data**: the engine never deletes a note or reply; resolution is a status flip; deletion is a human act outside the engine.
 4. **Degrade visibly, never crash**: unsupported prop types, missing fixtures, duplicate names, and unknown components become warnings and visible no-ops.
-5. **The contract is framework-neutral**: manifest schema, URL grammar, notes shape, and `.steer/` layout are identical across frameworks and bundlers; only extractors, transports, and render surfaces vary.
+5. **The contract is framework-neutral**: manifest schema, URL grammar, notes shape, and `.steer/` layout are identical across frameworks and bundlers; only extractors, transports, and mounters vary. The chrome is built once and is byte-identical across hosts.
 
 ### Top quality goals
 
@@ -75,10 +75,10 @@ graph LR
   E -->|HTTP API /__steer/api/*| UI[steer-ui UI per framework]
   E -->|HTTP API| A[Agents: Playwright + curl]
   H[Host dev server] -.->|driving adapter: Vite plugin| E
-  UI -->|registry glue| APP[Host components]
+  UI -->|Mounter, over the bridge| APP[Host components]
 ```
 
-**In scope:** the domain model, TS extraction, manifest assembly, state URL grammar, note transitions, doctor checks, the engine facade, memory + node-fs + Vite adapters, the Solid render surface, the CLI and visual benches. **Out of scope (host):** the component library itself, the host's app routes, flow-level QA, production builds.
+**In scope:** the domain model, TS extraction, manifest assembly, state URL grammar, note transitions, doctor checks, the engine facade, memory + node-fs + Vite adapters, the single prebuilt chrome, the per-framework Mounters, the CLI and visual benches. **Out of scope (host):** the component library itself, the host's app routes, flow-level QA, production builds.
 
 ---
 
@@ -90,7 +90,7 @@ A hexagonal engine applied by an agent, per the onc9 primitive pattern:
 - **2.0 (the agent)**: installs steer-ui into hosts (skill), and operates it daily (read notes, reproduce, fix, reply, resolve).
 - **3.0 (data)**: fixtures, notes, the host config (componentDir, excludeDirs), and the skill playbooks.
 
-The seams where hosts differ are the ports: source access, manifest/fixture/note storage, clock/ids, and the two host-idiomatic surfaces (the bundler driving adapter, the framework render surface).
+The seams where hosts differ are the ports: source access, manifest/fixture/note storage, clock/ids, and the two host-idiomatic pieces (the bundler driving adapter, and the framework Mounter). The chrome is NOT a seam: it is one artifact, built once, served rather than compiled.
 
 ---
 
@@ -119,8 +119,9 @@ src/
     ├── node-server.ts     driving adapter: standalone API server for
     │                      non-Vite hosts (proxy target; regen-on-read)
     ├── client.ts          framework-neutral browser client + selector
-    ├── solid/             Solid render surface (reference)
-    └── react/             React render surface (full-parity port)
+    ├── mount/             one file per framework: solid.ts, react.ts
+    ├── solid/             the chrome's components (built, never host-compiled)
+    └── chrome/            bench + overlay entries -> dist/chrome/*
 playground/
 ├── run.ts                 CLI bench: full loop offline, deterministic
 ├── app/                   visual bench: Vite+Solid host (typecheck on)
@@ -149,7 +150,7 @@ The component registry deliberately lives in the HOST (`registerComponents(impor
 
 steer-ui deploys INTO hosts, by agent, via the skill (no npm distribution):
 
-- Copied code: `core/` + node adapters wired for the host's bundler, the framework render surface, the registry glue. A commit-hash comment is the drift receipt.
+- Copied code: `core/` + node adapters wired for the host's bundler, the host's Mounter, and the BUILT chrome (artifacts, not source). The host compiles only the register entry and the mounter. A commit-hash comment is the drift receipt.
 - Host config: `componentDir` (where components live), `excludeDirs` (where the steer-ui UI was installed).
 - `.steer/` scaffold: `fixtures/` and `notes/` committed; `manifest.json` gitignored.
 - CLAUDE.md injection: steer-ui-is-truth, verify-after-edit, the notes protocol.
@@ -203,7 +204,7 @@ The playground app is the reference deployment and MUST stay runnable offline: `
 
 | Item | Status |
 |---|---|
-| Svelte/Vue extractors and render surfaces | Named gap; the extract seam and the shared client are ready for them |
+| Svelte/Vue extractors and Mounters | Named gap; the extract seam and the Mounter contract suite are ready for them. A framework no longer costs a canvas |
 | Next.js surface mounting (router mapping for the React surface) | Recipe drafted in the install playbook; not exercised against a real Next host |
 | Two surfaces to keep in lockstep | Solid is the reference; every canvas change must be ported to `adapters/react/` in the same commit |
 | Checked extraction cost | A TS program per regeneration; opt-in per host, debounce absorbs it in practice |
@@ -226,4 +227,4 @@ The playground app is the reference deployment and MUST stay runnable offline: `
 | note | A feedback pin: stateUrl + selector + coords/rect + thread |
 | specimen sheet | The library index: live components on hairline rows, no cards |
 | doctor | Deterministic health checks over manifest/fixtures/notes |
-| registry glue | The host-side `registerComponents(import.meta.glob(...))` call |
+| register entry | The host-side `publishRegistration({ modules: import.meta.glob(...), mounter })` call |

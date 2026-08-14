@@ -5,6 +5,7 @@ import { createEffect, createRoot, type JSX } from "solid-js"
 import { act, createElement, useState as useReactState } from "react"
 import { describe, expect, it } from "vitest"
 import type { Mounter } from "../../ports"
+import { deferElement } from "../../core/registry"
 import { reactMounter } from "./react"
 import { solidMounter } from "./solid"
 
@@ -69,8 +70,13 @@ function SolidInner(props: Record<string, unknown>): JSX.Element {
 
 function SolidWrapper(props: Record<string, unknown>): JSX.Element {
   const el = document.createElement("section")
-  const child = props.children
-  if (child instanceof Node) el.appendChild(child)
+  // A Solid component body runs once, so children must be read inside a
+  // tracking scope. In real components that is JSX; here it is an effect.
+  createEffect(() => {
+    const child = props.children
+    el.replaceChildren()
+    if (child instanceof Node) el.appendChild(child)
+  })
   return el as unknown as JSX.Element
 }
 
@@ -218,6 +224,46 @@ for (const [name, { mounter, Probe, flush, owned }] of Object.entries(CASES)) {
         )
       )
       expect(el.querySelector("section section em")?.textContent).toBe("deep")
+    })
+
+    // The chrome bundles its own runtime, so it must not build instances: it
+    // defers, and the mounter materializes inside its own owner. Without this
+    // the chrome would work but leak every composed child's computations.
+    it("materializes deferred elements passed as props", () => {
+      const { Wrapper, Inner } = COMPOSED[name]!
+      const el = host()
+      flush(() =>
+        void mounter.mount(el, Wrapper, {
+          children: deferElement(Inner, { label: "deferred" }),
+        })
+      )
+      expect(el.querySelector("section em")?.textContent).toBe("deferred")
+    })
+
+    it("materializes deferred elements recursively", () => {
+      const { Wrapper, Inner } = COMPOSED[name]!
+      const el = host()
+      flush(() =>
+        void mounter.mount(el, Wrapper, {
+          children: deferElement(Wrapper, {
+            children: deferElement(Inner, { label: "deep-deferred" }),
+          }),
+        })
+      )
+      expect(el.querySelector("section section em")?.textContent).toBe("deep-deferred")
+    })
+
+    it("materializes on update too", () => {
+      const { Wrapper, Inner } = COMPOSED[name]!
+      const el = host()
+      let handle!: ReturnType<Mounter["mount"]>
+      flush(() => {
+        handle = mounter.mount(el, Wrapper, {
+          children: deferElement(Inner, { label: "first" }),
+        })
+      })
+      flush(() => handle.update({ children: deferElement(Inner, { label: "second" }) }))
+      expect(el.querySelector("section em")?.textContent).toBe("second")
     })
 
     it("mounts are independent of one another", () => {

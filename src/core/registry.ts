@@ -112,3 +112,46 @@ export function coerceProps(
 ): Record<string, unknown> {
   return coercePropsCore(spec, values, (value) => resolveFixtureValue(value, element))
 }
+
+// --- deferred element materialization ---------------------------------------
+// A prebuilt chrome bundles its own framework runtime, so when the host is
+// built with the same framework there are two independent runtimes. Ownership
+// cannot cross that line: an instance created by the host's runtime while only
+// the chrome's runtime has a current owner is unowned, so its effects never
+// dispose.
+//
+// The chrome therefore never builds instances. It leaves a marker, and the
+// Mounter materializes it inside its OWN scope, where the host runtime's owner
+// is the mounted tree. Framework free, so it lives here.
+
+const REF = "__steerElement"
+
+interface DeferredElement {
+  readonly [REF]: true
+  component: unknown
+  props: Record<string, unknown>
+}
+
+function isDeferred(value: unknown): value is DeferredElement {
+  return typeof value === "object" && value !== null && REF in value
+}
+
+/** The chrome's element factory: records what to build, builds nothing. */
+export function deferElement(component: unknown, props: Record<string, unknown>): unknown {
+  return { [REF]: true, component, props } satisfies DeferredElement
+}
+
+/** The mounter's counterpart, called inside the host runtime's owner. */
+export function materialize(
+  values: Record<string, unknown>,
+  element: ElementFactory
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(values)) out[key] = materializeValue(value, element)
+  return out
+}
+
+function materializeValue(value: unknown, element: ElementFactory): unknown {
+  if (!isDeferred(value)) return value
+  return element(value.component, materialize(value.props, element))
+}

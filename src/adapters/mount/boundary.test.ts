@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from "node:fs"
+import { existsSync, readFileSync, readdirSync } from "node:fs"
 import path from "node:path"
 import { describe, expect, it } from "vitest"
 
@@ -11,6 +11,7 @@ import { describe, expect, it } from "vitest"
 // true. That regression is invisible at runtime and obvious here.
 
 const SRC = path.resolve(import.meta.dirname, "../..")
+const CHROME_DIST = path.resolve(SRC, "../dist/chrome")
 
 const FRAMEWORKS = ["solid-js", "react", "react-dom", "vue", "svelte"]
 
@@ -69,4 +70,48 @@ describe("framework boundary", () => {
   it("keeps the bridge importing nothing at all", () => {
     expect(importsOf(path.join(SRC, "core/bridge.ts"))).toEqual([])
   })
+
+  // The chrome IS Solid, and that is fine because it ships prebuilt. What must
+  // never happen is a host importing it: that is what would drag Solid into a
+  // Next or Vue build. The host's entry reaches steer-ui through core/bridge
+  // and one mounter, and nothing else.
+  it("keeps the chrome out of anything a host compiles", () => {
+    const hostCompiled = [
+      path.join(SRC, "core/bridge.ts"),
+      path.join(SRC, "adapters/mount/react.ts"),
+      path.join(SRC, "adapters/mount/solid.ts"),
+      path.join(SRC, "core/registry.ts"),
+    ]
+    for (const file of hostCompiled) {
+      const local = readFileSync(file, "utf8")
+      expect(local, `${path.relative(SRC, file)} reaches into the chrome`).not.toMatch(
+        /from\s+["'][^"']*adapters\/(chrome|solid)\//
+      )
+    }
+  })
 })
+
+// The architecture's central claim, checked against the artifact rather than
+// the source: if the built chrome still imported a framework, the host would
+// have to supply it, and "a React host never sees Solid" would be false.
+describe.skipIf(!existsSync(path.join(CHROME_DIST, "bench.js")))(
+  "built chrome is self-contained",
+  () => {
+    const bundles = () =>
+      readdirSync(CHROME_DIST).filter((f) => f.endsWith(".js"))
+
+    it("ships both entries", () => {
+      expect(bundles()).toEqual(expect.arrayContaining(["bench.js", "overlay.js"]))
+    })
+
+    it("has no bare module imports left to resolve", () => {
+      for (const file of bundles()) {
+        const source = readFileSync(path.join(CHROME_DIST, file), "utf8")
+        const bare = [...source.matchAll(/(?:from|import)\s*["']([^"'.][^"']*)["']/g)].map(
+          (m) => m[1]
+        )
+        expect(bare, `${file} expects the host to provide ${bare.join(", ")}`).toEqual([])
+      }
+    })
+  }
+)

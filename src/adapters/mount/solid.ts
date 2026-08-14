@@ -1,6 +1,7 @@
-import { createComponent, createSignal } from "solid-js"
+import { createComponent, createMemo, createSignal } from "solid-js"
 import { render } from "solid-js/web"
 import type { MountHandle, Mounter } from "../../ports"
+import { materialize } from "../../core/registry"
 
 // No JSX: createComponent is what the Solid compiler emits for <Comp {...p} />,
 // so this file needs no framework compiler and can ship prebuilt.
@@ -18,24 +19,27 @@ export const solidMounter: Mounter = {
   mount(el: HTMLElement, Component: unknown, props: Record<string, unknown>): MountHandle {
     const [current, setCurrent] = createSignal<Record<string, unknown>>(props)
 
-    const reactiveProps = new Proxy(
-      {},
-      {
-        get: (_target, key: string | symbol) => current()[key as string],
-        has: (_target, key: string | symbol) => (key as string) in current(),
-        ownKeys: () => Reflect.ownKeys(current()),
-        getOwnPropertyDescriptor: (_target, key: string | symbol) => ({
-          value: current()[key as string],
-          enumerable: true,
-          configurable: true,
-        }),
-      }
-    ) as Record<string, unknown>
+    const dispose = render(() => {
+      // Inside render, so this owner belongs to THIS runtime and composed
+      // children created here dispose with the mounted tree.
+      const values = createMemo(() => materialize(current(), solidElement))
 
-    const dispose = render(
-      () => createComponent(Component as never, reactiveProps as never),
-      el
-    )
+      const reactiveProps = new Proxy(
+        {},
+        {
+          get: (_target, key: string | symbol) => values()[key as string],
+          has: (_target, key: string | symbol) => (key as string) in values(),
+          ownKeys: () => Reflect.ownKeys(values()),
+          getOwnPropertyDescriptor: (_target, key: string | symbol) => ({
+            value: values()[key as string],
+            enumerable: true,
+            configurable: true,
+          }),
+        }
+      ) as Record<string, unknown>
+
+      return createComponent(Component as never, reactiveProps as never)
+    }, el)
 
     let live = true
     return {

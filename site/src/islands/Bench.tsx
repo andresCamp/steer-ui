@@ -1,6 +1,7 @@
 import { Router, Route } from "@solidjs/router"
 import { SteerIndex } from "../../../src/adapters/solid/SteerIndex"
 import { SteerComponent } from "../../../src/adapters/solid/SteerComponent"
+import { connectHost } from "../../../src/adapters/solid/host"
 import "../steer"
 import "../lib/api-shim"
 
@@ -10,6 +11,8 @@ import "../lib/api-shim"
  * static files built by the real extractor, and note writes go to
  * localStorage instead of .steer/notes.
  */
+connectHost()
+
 export default function Bench() {
   return (
     <Router>

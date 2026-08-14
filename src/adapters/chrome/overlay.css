@@ -1,25 +1,11 @@
-@import "tailwindcss";
-/* The steer UI lives in the lab, outside this app root; register it so
-   Tailwind's class detection scans it. */
-@source "../../../src/adapters/react";
-
-@theme {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "SF Pro Text", "Segoe UI", sans-serif;
-  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
-  --color-surface: #f7f7f8;
-}
-
-body {
-  @apply bg-[#f7f7f8] text-zinc-900 antialiased;
-  font-feature-settings: "cv05", "ss01";
-}
-
-/*
- * Apple liquid-glass material: frosted translucency (blur + saturate +
- * brightness), rim light on every inner edge, hairline border, soft
- * double drop shadow. Refraction needs Chromium-only SVG filters, so this
- * is the frost + rim + sheen tier.
- */
+/* The overlay is injected into the HOST's page, so it must not touch the host's
+   styles. Preflight is deliberately omitted: importing all of Tailwind here
+   would reset the host app's typography, margins and borders out from under it.
+   Theme and utilities only. */
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+@source "../../../src/adapters/solid";
+@source "../../../src/adapters/chrome";
 .glass {
   background: linear-gradient(
     135deg,
@@ -76,11 +62,13 @@ body {
   animation: rise-in 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* A placed note's pin lands where the ghost pin was, so the note has a
-   visible target while it is still being written. */
+/* A placed note's pin lands where the ghost pin was, so a note has a visible
+   target while it is still being written. */
 @keyframes pin-drop {
   0% { opacity: 0; transform: scale(0.4) translateY(-10px); }
   60% { opacity: 1; transform: scale(1.12) translateY(0); }
   100% { opacity: 1; transform: scale(1) translateY(0); }
 }
-.pin-drop { animation: pin-drop 340ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.pin-drop {
+  animation: pin-drop 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}

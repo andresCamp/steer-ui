@@ -10,16 +10,18 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "dev": "vite playground/app",
-    "dev:react": "vite playground/react-app",
+    "dev": "pnpm build:chrome && vite playground/app",
+    "dev:react": "pnpm build:chrome && vite playground/react-app",
     "dev:anchor": "vite playground/anchor-lab",
     "test": "vitest run",
     "check-types": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.react.json --noEmit && tsc -p tsconfig.lab.json --noEmit",
     "playground": "bun playground/run.ts",
     "build": "pnpm -C site install --frozen-lockfile && pnpm -C site run build",
-    "deploy": "wrangler deploy"
+    "deploy": "wrangler deploy",
+    "build:chrome": "vite build --config vite.chrome.config.ts"
   },
   "dependencies": {
+    "@floating-ui/dom": "^1.8.0",
     "@solidjs/router": "^0.15.3",
     "lucide-react": "^0.540.0",
     "lucide-solid": "^1.30.0",

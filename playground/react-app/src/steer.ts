@@ -1,13 +1,17 @@
-import { registerComponents } from "../../../src/adapters/react/data"
+import { publishRegistration } from "../../../src/core/bridge"
+import { reactMounter } from "../../../src/adapters/mount/react"
 
-// The host's side of the render contract: the glob must live here because
-// import.meta.glob resolves relative to the importing file. This is the
-// entire per-host glue for the React surface.
+// Imported only by the virtual host entry. The host app must not import this.
+//
+// The React host compiles exactly this file and the React mounter. The bench it
+// gets is the same prebuilt Solid chrome the Solid host gets, and no Solid ever
+// enters this build.
 
-registerComponents(
-  import.meta.glob("./components/**/*.tsx", { eager: true }) as Record<
+publishRegistration(globalThis, {
+  modules: import.meta.glob("./components/**/*.tsx", { eager: true }) as Record<
     string,
     Record<string, unknown>
   >,
-  { author: "andres" }
-)
+  mounter: reactMounter,
+  author: "andres",
+})
