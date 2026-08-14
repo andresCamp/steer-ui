@@ -190,3 +190,12 @@ body {
   min-width: 0;
   min-height: 0;
 }
+
+/* Neither thread on the marketing page wires up a reply handler, so the reply
+   box is chrome that cannot be typed into. On a phone that dead row is the
+   difference between a note fitting under the copy and running off the stage. */
+@media (max-width: 639px) {
+  .note-opaque [data-steer-reply-input] {
+    display: none;
+  }
+}

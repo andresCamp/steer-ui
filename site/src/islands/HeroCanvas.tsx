@@ -28,7 +28,8 @@ interface Specimen {
   id: string
   at: JSX.CSSProperties
   atSm?: JSX.CSSProperties
-  /** Phones get their own spot: the copy owns the middle, tiles take the edges. */
+  /** Phones get their own side of the stage; the stage's own top supplies
+   *  the vertical, so an xs spot names left or right and nothing else. */
   atXs?: JSX.CSSProperties
   side: "left" | "right"
   width: number
@@ -44,7 +45,7 @@ const SPECIMENS: Specimen[] = [
     id: "field",
     at: { left: "6%", top: "14%" },
     atSm: { left: "5%", top: "7%" },
-    atXs: { left: "5%", top: "116px" },
+    atXs: { left: "5%" },
     side: "left",
     width: 244,
     widthXs: 186,
@@ -54,7 +55,7 @@ const SPECIMENS: Specimen[] = [
     id: "rating",
     at: { right: "5%", top: "22%" },
     atSm: { right: "5%", top: "24%" },
-    atXs: { right: "5%", top: "116px" },
+    atXs: { right: "5%" },
     side: "right",
     width: 210,
     widthXs: 168,
@@ -64,7 +65,7 @@ const SPECIMENS: Specimen[] = [
     id: "switch",
     at: { left: "10%", top: "62%" },
     atSm: { left: "5%", top: "72%" },
-    atXs: { left: "5%", top: "116px" },
+    atXs: { left: "5%" },
     side: "left",
     width: 262,
     widthXs: 190,
@@ -125,11 +126,15 @@ const SPECIMENS: Specimen[] = [
 interface Scene {
   id: string
   kind: "pin" | "region"
-  /** Where on the tile the note lands, as fractions of its box. */
-  at: Point
+  /** Where on the tile a pin lands, as fractions of its box. A region is
+   *  centred on the component instead, so it has no spot to name. */
+  at?: Point
   selector: string
   note: string
   reply: string
+  /** The same answer at phone length. A reply that runs to three lines on a
+   *  264px panel pushes the note off the bottom of the stage. */
+  replyXs?: string
   /** Where the cursor puts the fix to the test, as fractions of the tile. */
   verifyAt: Point
 }
@@ -142,16 +147,18 @@ const SCENES: Scene[] = [
     selector: "MaterialField",
     note: "The label collides with the underline when it shrinks.",
     reply: "Lifted the floating label clear of the rule and matched the focus colour.",
+    replyXs: "Lifted the label clear of the rule.",
     verifyAt: { x: 0.5, y: 0.62 },
   },
   {
     id: "rating",
     kind: "region",
-    at: { x: -0.06, y: -1.1 },
     selector: "DaisyRating",
     note: "These stars are too small to hit on the first try.",
     reply: "Doubled the target. Should the empty ones stay grey, or go outlined?",
-    verifyAt: { x: 0.32, y: 0.5 },
+    replyXs: "Doubled the target. Grey, or outlined?",
+    // The row is centred in its slot: this is the second star, not a gap.
+    verifyAt: { x: 0.37, y: 0.5 },
   },
   {
     id: "switch",
@@ -160,6 +167,7 @@ const SCENES: Scene[] = [
     selector: "ShadcnSwitch",
     note: "Off reads as disabled, not as a choice.",
     reply: "Raised the track contrast so off is clearly still yours to flip.",
+    replyXs: "Raised the track contrast so off reads as a choice.",
     verifyAt: { x: 0.06, y: 0.2 },
   },
 ]
@@ -176,6 +184,10 @@ interface Box {
 /** Region carries min-w-40 / min-h-24; the drag math has to agree with it. */
 const REGION_MIN_W = 160
 const REGION_MIN_H = 96
+/** Air left around the component inside the box it is selected by. Generous
+ *  sideways, because the thing keeps its room when the fix makes it bigger. */
+const REGION_PAD_X = 48
+const REGION_PAD_Y = 32
 
 /** One dial for the whole performance. */
 const RATE = 1.1
@@ -186,19 +198,39 @@ const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms * RATE))
 const PANEL = 320
 const PANEL_XS = 264
 const panelWidth = () => (window.innerWidth < 640 ? PANEL_XS : PANEL)
-/** How tall a thread gets once the agent has answered and the reply lands. */
+/** How tall a thread gets once the agent has answered and the reply lands. On
+ *  a phone the dead reply box is hidden (see .note-opaque in global.css), so
+ *  the same thread finishes shorter. */
 const PANEL_H = 300
-/** The headline is the one thing a note is never allowed to cover. */
-const headlineBottom = () =>
-  document.querySelector('[data-steer="HeroTitle"]')?.getBoundingClientRect().bottom ?? 0
+const PANEL_H_XS = 200
+const panelHeight = () => (window.innerWidth < 640 ? PANEL_H_XS : PANEL_H)
 
-const clamp = (p: Point): Point => {
+/**
+ * The band the performance is allowed to use. On a phone the copy owns the top
+ * of the page and the HUD owns the floor, so the stage is what is left between
+ * them. Both edges are measured rather than guessed: the copy's height moves
+ * with the viewport, and a constant that was right at one size was covering the
+ * subhead at every other.
+ */
+const COPY_GAP = 12
+const stageTop = () => {
+  const copy = document.querySelector("[data-hero-copy]")?.getBoundingClientRect().bottom
+  return copy ? copy + COPY_GAP : 16
+}
+const stageBottom = () =>
+  (document.querySelector("[data-landing-peek]")?.getBoundingClientRect().top ?? window.innerHeight) - 12
+
+/** On a phone the note is wider than the gap beside any tile, so it can only
+ *  go under the thing it is about. `clear` is that thing's box. */
+const clamp = (p: Point, clear?: Box): Point => {
   const x = Math.max(16, Math.min(p.x, window.innerWidth - panelWidth() - 16))
-  const hi = window.innerHeight - PANEL_H - 12
-  // A phone has no spare room: the note takes the band under the headline,
-  // which is the only place it fits whole.
-  const lo = window.innerWidth < 640 ? headlineBottom() + 12 : 16
-  if (lo > hi) return { x, y: Math.max(16, hi) }
+  const xs = window.innerWidth < 640
+  const lo = xs ? Math.max(stageTop(), clear ? clear.y + clear.h + 10 : 0) : 16
+  const hi = (xs ? stageBottom() : window.innerHeight) - panelHeight() - 12
+  // Too short to hold a whole note: keep the top of it under the copy anyway
+  // and let the tail run beneath the HUD, which draws over it. Riding up onto
+  // the headline is the one outcome worse than being clipped.
+  if (lo > hi) return { x, y: lo }
   return { x, y: Math.min(Math.max(p.y, lo), hi) }
 }
 
@@ -206,6 +238,9 @@ export default function HeroCanvas() {
   const [wide, setWide] = createSignal(true)
   const [narrow, setNarrow] = createSignal(false)
   const [staged, setStaged] = createSignal(SCENES[0].id)
+  /** Where the phone stage starts, in px. Measured off the copy, so a wrapped
+   *  headline or an edited subhead moves the tiles instead of colliding. */
+  const [stage, setStage] = createSignal(0)
   const [cursor, setCursor] = createSignal<Point>({ x: 0, y: 0 })
   const [cursorOn, setCursorOn] = createSignal(false)
   const [pressed, setPressed] = createSignal(false)
@@ -239,7 +274,11 @@ export default function HeroCanvas() {
 
   /** Three tiers: desktop scatter, tablet scatter, phone edges. */
   const spotOf = (s: Specimen) =>
-    wide() ? s.at : narrow() ? (s.atXs ?? s.atSm ?? s.at) : (s.atSm ?? s.at)
+    wide()
+      ? s.at
+      : narrow()
+        ? { ...(s.atXs ?? s.atSm ?? s.at), top: `${stage()}px` }
+        : (s.atSm ?? s.at)
   const widthOf = (s: Specimen) =>
     wide() ? s.width : narrow() ? (s.widthXs ?? Math.min(s.width, 186)) : Math.min(s.width, 210)
 
@@ -248,6 +287,38 @@ export default function HeroCanvas() {
     if (!el) return null
     const r = el.getBoundingClientRect()
     return { x: r.left, y: r.top, w: r.width, h: r.height }
+  }
+
+  /**
+   * What a tile actually draws, rather than the slot it draws in. Tiles are
+   * fixed-width so the scatter holds still; the component inside is usually
+   * narrower. Measuring the slot would hang a region off to one side of the
+   * thing it is about.
+   */
+  const contentBoxOf = (id: string): Box | null => {
+    const root = tiles.get(id)?.querySelector(".swap-in")?.firstElementChild
+    const rects = root ? Array.from(root.children, (k) => k.getBoundingClientRect()) : []
+    if (!rects.length) return null
+    const x = Math.min(...rects.map((r) => r.left))
+    const y = Math.min(...rects.map((r) => r.top))
+    return {
+      x,
+      y,
+      w: Math.max(...rects.map((r) => r.right)) - x,
+      h: Math.max(...rects.map((r) => r.bottom)) - y,
+    }
+  }
+
+  /**
+   * The box a drag has to leave behind: centred on the component and never
+   * smaller than Region's own minimums. Drawn box and dragged box are the
+   * same box, so the cursor finishes on the corner it pulled.
+   */
+  const regionBoxOf = (id: string, fallback: Box): Box => {
+    const c = contentBoxOf(id) ?? fallback
+    const w = Math.max(REGION_MIN_W, c.w + REGION_PAD_X * 2)
+    const h = Math.max(REGION_MIN_H, c.h + REGION_PAD_Y * 2)
+    return { x: c.x + c.w / 2 - w / 2, y: c.y + c.h / 2 - h / 2, w, h }
   }
 
   /** One throw of the cursor, bending one way and correcting if it is far. */
@@ -301,24 +372,27 @@ export default function HeroCanvas() {
     }
     const box = boxOf(scene.id)
     if (!box) return
-    const anchor = { x: box.x + box.w * scene.at.x, y: box.y + box.h * scene.at.y }
+    const drawn = scene.kind === "region" ? regionBoxOf(scene.id, box) : null
+    const spot = scene.at ?? { x: 0.5, y: 0.5 }
+    const anchor = drawn
+      ? { x: drawn.x, y: drawn.y }
+      : { x: box.x + box.w * spot.x, y: box.y + box.h * spot.y }
 
     await moveTo(anchor, Math.min(box.w, 140))
     await sleep(180)
 
-    if (scene.kind === "region") {
-      // Size the pull so the finished box clears Region's own minimums. If it
-      // did not, the drawn box would be larger than the dragged one and the
-      // cursor would float inside its own selection.
-      const end = {
-        x: Math.max(box.x + box.w + 14, anchor.x + REGION_MIN_W + 8),
-        y: Math.max(box.y + box.h + 34, anchor.y + REGION_MIN_H + 8),
-      }
+    if (drawn) {
+      // Corner to opposite corner of the box that was measured above.
+      const end = { x: drawn.x + drawn.w, y: drawn.y + drawn.h }
       setPressed(true)
       setRegion({ x: anchor.x, y: anchor.y, w: 0, h: 0 })
+      // The pin is in hand for the whole pull: it travels with the cursor
+      // rather than appearing on a corner once the box is drawn.
+      setPin({ x: anchor.x, y: anchor.y, label: String(index + 1) })
       const pull = Math.hypot(end.x - anchor.x, end.y - anchor.y)
       await drag(anchor, end, dragDuration(pull) * RATE, (p) => {
         setCursor(p)
+        setPin((q) => (q ? { ...q, x: p.x, y: p.y } : q))
         setRegion({
           x: Math.min(anchor.x, p.x),
           y: Math.min(anchor.y, p.y),
@@ -333,10 +407,11 @@ export default function HeroCanvas() {
       await click()
     }
 
-    const r = region()
-    const foot = scene.kind === "region" && r ? { x: r.x, y: r.y + r.h } : anchor
+    // Wherever the hand came to rest is where the note lives — the release
+    // point of a pull, the click point of a tap. Never a corner of the box.
+    const foot = cursor()
     setPin({ x: foot.x, y: foot.y, label: String(index + 1) })
-    const panel = clamp({ x: foot.x, y: foot.y + 16 })
+    const panel = clamp({ x: foot.x, y: foot.y + 16 }, narrow() ? box : undefined)
     setPending({ x: panel.x, y: panel.y, selector: scene.selector, text: "" })
     await sleep(260)
     await typeOut(scene.note)
@@ -374,7 +449,7 @@ export default function HeroCanvas() {
     setRefined((v) => [...v, scene.id])
     setMount((m) => ({ ...m, [scene.id]: keyOf(scene.id) + 1 }))
     await sleep(520)
-    await streamReply(scene.reply)
+    await streamReply(narrow() && scene.replyXs ? scene.replyXs : scene.reply)
 
     // Four: the veil lifts on the component the answer just described, so
     // both payoffs resolve together, in the one place the eye already is.
@@ -425,6 +500,14 @@ export default function HeroCanvas() {
     const onXs = (e: MediaQueryListEvent) => setNarrow(e.matches)
     xs.addEventListener("change", onXs)
 
+    // The copy is laid out by the page, not by this island, so the stage can
+    // only be known once it has been measured. Re-measured on resize because a
+    // rotation or an address bar collapsing rewraps the headline.
+    const measure = () => setStage(stageTop())
+    measure()
+    window.addEventListener("resize", measure)
+    window.addEventListener("orientationchange", measure)
+
     const still = window.matchMedia("(prefers-reduced-motion: reduce)")
     let stopped = false
 
@@ -461,6 +544,8 @@ export default function HeroCanvas() {
       stopped = true
       mq.removeEventListener("change", onChange)
       xs.removeEventListener("change", onXs)
+      window.removeEventListener("resize", measure)
+      window.removeEventListener("orientationchange", measure)
     })
   })
 
