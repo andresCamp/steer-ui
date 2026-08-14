@@ -1,5 +1,5 @@
 import { createResource, For, Show, Suspense } from "solid-js"
-import { Dynamic } from "solid-js/web"
+import { HostSlot } from "./HostSlot"
 import { A, useNavigate } from "@solidjs/router"
 import {
   coerceProps,
@@ -85,9 +85,10 @@ function Specimen(props: { spec: SteerComponentSpec; index: number }) {
             >
               <span class="pointer-events-none inline-block">
                 <Show when={resolveComponent(props.spec.name, props.spec.target)}>
-                  <Dynamic
-                    component={resolveComponent(props.spec.name, props.spec.target)}
-                    {...coerceProps(props.spec, valuesFor(state))}
+                  <HostSlot
+                    name={props.spec.name}
+                    target={props.spec.target}
+                    values={coerceProps(props.spec, valuesFor(state))}
                   />
                 </Show>
               </span>

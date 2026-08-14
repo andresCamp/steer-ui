@@ -8,7 +8,6 @@ import {
   Suspense,
   type JSX,
 } from "solid-js"
-import { Dynamic } from "solid-js/web"
 import { A, useNavigate, useParams, useSearchParams } from "@solidjs/router"
 import Plus from "lucide-solid/icons/plus"
 import Minus from "lucide-solid/icons/minus"
@@ -19,8 +18,10 @@ import ArrowLeft from "lucide-solid/icons/arrow-left"
 import { AddNote } from "./chrome/AddNote"
 import { GhostPin } from "./chrome/GhostPin"
 import { NoteThread } from "./chrome/NoteThread"
+import { Floater } from "./chrome/Floater"
 import { Pin } from "./chrome/Pin"
 import { Region } from "./chrome/Region"
+import { HostSlot } from "./HostSlot"
 import {
   steerAuthor,
   coerceProps,
@@ -41,6 +42,11 @@ import {
   type SteerNote,
   type SteerProp,
 } from "./data"
+
+/** Viewport margins a floating panel may not cross. The bench chrome —
+ *  breadcrumb, zoom rail, knobs panel, add-note button — owns those bands,
+ *  so a thread that would land under them is flipped or shifted instead. */
+const KEEP_OUT = { top: 84, right: 356, bottom: 76, left: 84 }
 
 const ZOOM_MIN = 0.25
 const ZOOM_MAX = 4
@@ -261,6 +267,13 @@ export function SteerComponent() {
     canvasRef = el
     el.addEventListener("wheel", onWheel, { passive: false })
     onCleanup(() => el.removeEventListener("wheel", onWheel))
+  }
+
+  /** Bench fractions → a point in client space, read live under pan and zoom. */
+  const benchPoint = (at: { x: number; y: number }) => {
+    const box = benchRef?.getBoundingClientRect()
+    if (!box) return undefined
+    return { x: box.left + at.x * box.width, y: box.top + at.y * box.height }
   }
 
   /** Client point → bench-relative fractions (may exceed 0..1 off-component). */
@@ -684,7 +697,7 @@ export function SteerComponent() {
                 data-steer-bench={s().slug}
                 data-steer-state={currentUrl()}
               >
-                <Dynamic component={resolveComponent(s().name, s().target)} {...componentProps()} />
+                <HostSlot name={s().name} target={s().target} values={componentProps()} />
 
                 {/* live region marquee while dragging a highlight */}
                 <Show when={regionDrag() ?? pending()?.rect}>
@@ -718,7 +731,11 @@ export function SteerComponent() {
                 </Show>
 
                 <For each={openNotes()}>
-                  {(note, i) => (
+                  {(note, i) => {
+                    // The thread hangs off this node, so the Floater needs it
+                    // by ref rather than by coordinates.
+                    let pinEl: HTMLDivElement | undefined
+                    return (
                     <>
                       {/* saved region highlight; whispers until its pin opens.
                           Grabbing it drags the whole note; corners resize.
@@ -745,6 +762,7 @@ export function SteerComponent() {
                         )}
                       </Show>
                       <div
+                        ref={pinEl}
                         class="absolute z-10"
                         style={{
                           left: `${pinCoords(note).x * 100}%`,
@@ -760,7 +778,7 @@ export function SteerComponent() {
                         onPointerDown={onNoteDrag(note)}
                       />
                       <Show when={openPin() === note.id}>
-                        <div class="absolute bottom-9 left-0 z-20">
+                        <Floater anchor={() => pinEl} keepOut={KEEP_OUT}>
                           <NoteThread
                             author={note.author}
                             createdLabel={timeAgo(note.created)}
@@ -775,55 +793,49 @@ export function SteerComponent() {
                             onReplyInput={setReplyText}
                             onReply={() => submitReply(note)}
                           />
-                        </div>
+                        </Floater>
                       </Show>
                       </div>
                     </>
-                  )}
+                    )
+                  }}
                 </For>
 
                 <Show when={pending()}>
                   {(p) => (
-                    <div
-                      class="glass absolute z-20 w-80 rounded-2xl p-4"
-                      style={{
-                        left: `${p().coords.x * 100}%`,
-                        top: `${p().coords.y * 100}%`,
-                        transform: `translate(-8px, calc(-100% - 14px)) scale(${1 / zoom()})`,
-                        "transform-origin": "bottom left",
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <textarea
-                        class="h-20 w-full resize-none bg-transparent text-base leading-relaxed text-zinc-800 outline-none placeholder:text-zinc-300"
-                        placeholder="What feels off?"
-                        value={noteText()}
-                        onInput={(e) => setNoteText(e.currentTarget.value)}
-                        data-steer-note-input
-                      />
-                      <div class="mt-2 flex items-center justify-between">
-                        <span class="max-w-32 truncate font-mono text-base text-zinc-300">
-                          {p().selector}
-                        </span>
-                        <div class="flex gap-4">
-                          <button
-                            type="button"
-                            class="cursor-pointer text-base text-zinc-400 transition-colors hover:text-zinc-900"
-                            onClick={() => setPending(undefined)}
-                          >
-                            cancel
-                          </button>
-                          <button
-                            type="button"
-                            class="cursor-pointer text-base font-semibold text-zinc-900 transition-colors hover:text-zinc-500"
-                            onClick={submitNote}
-                            data-steer-note-save
-                          >
-                            pin
-                          </button>
+                    <Floater anchor={() => benchPoint(p().coords)} keepOut={KEEP_OUT}>
+                      <div class="glass w-80 rounded-2xl p-4">
+                        <textarea
+                          class="h-20 w-full resize-none bg-transparent text-base leading-relaxed text-zinc-800 outline-none placeholder:text-zinc-300"
+                          placeholder="What feels off?"
+                          value={noteText()}
+                          onInput={(e) => setNoteText(e.currentTarget.value)}
+                          data-steer-note-input
+                        />
+                        <div class="mt-2 flex items-center justify-between">
+                          <span class="max-w-32 truncate font-mono text-base text-zinc-300">
+                            {p().selector}
+                          </span>
+                          <div class="flex gap-4">
+                            <button
+                              type="button"
+                              class="cursor-pointer text-base text-zinc-400 transition-colors hover:text-zinc-900"
+                              onClick={() => setPending(undefined)}
+                            >
+                              cancel
+                            </button>
+                            <button
+                              type="button"
+                              class="cursor-pointer text-base font-semibold text-zinc-900 transition-colors hover:text-zinc-500"
+                              onClick={submitNote}
+                              data-steer-note-save
+                            >
+                              pin
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    </Floater>
                   )}
                 </Show>
               </div>

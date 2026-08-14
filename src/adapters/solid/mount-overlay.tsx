@@ -8,9 +8,14 @@ import { Peek } from "./chrome/Peek"
 import { Pin } from "./chrome/Pin"
 import { GhostPin } from "./chrome/GhostPin"
 import { NoteThread } from "./chrome/NoteThread"
+import { Floater } from "./chrome/Floater"
 import { bandOf } from "./chrome/bands"
 
 const AUTHOR = "andres"
+
+/** Viewport margins a floating panel may not cross. The bottom clears the
+ *  peek bar, which is the one piece of chrome that sits over the page. */
+const KEEP_OUT = { top: 16, right: 16, bottom: 92, left: 16 }
 
 function routeSlug(path: string): string {
   if (path === "/" || path === "") return "page"
@@ -26,7 +31,11 @@ function timeAgo(iso: string): string {
 }
 
 function isOverlay(el: EventTarget | null): boolean {
-  return el instanceof Node && !!document.getElementById("steer-overlay")?.contains(el)
+  if (!(el instanceof Node)) return false
+  // Floating panels are portalled to <body>, so they are chrome without being
+  // inside the overlay root.
+  if (el instanceof Element && el.closest("[data-steer-floater]")) return true
+  return !!document.getElementById("steer-overlay")?.contains(el)
 }
 
 function hostOf(el: HTMLElement): { slug: string; props: Record<string, string>; el: HTMLElement } | undefined {
@@ -279,8 +288,11 @@ function OverlayApp() {
       <Show when={pinsVisible()}>
         <For each={openNotes()}>
           {(n, i) => {
+            // The thread hangs off this node, so the Floater needs it by ref.
+            let pinEl: HTMLDivElement | undefined
             return (
               <div
+                ref={pinEl}
                 class="fixed z-[70]"
                 style={{
                   left: `${(width(), pinAt(n).x)}px`,
@@ -295,7 +307,7 @@ function OverlayApp() {
                   onPointerDown={onPinDrag(n)}
                 />
                 <Show when={openPin() === n.id && noteMatches(n)}>
-                  <div class="absolute bottom-9 left-0 z-20">
+                  <Floater anchor={() => pinEl} keepOut={KEEP_OUT}>
                     <NoteThread
                       author={n.author}
                       createdLabel={timeAgo(n.created)}
@@ -322,7 +334,7 @@ function OverlayApp() {
                         mutate((prev) => (prev ?? []).map((x) => (x.id === n.id ? saved : x)))
                       }}
                     />
-                  </div>
+                  </Floater>
                 </Show>
               </div>
             )
@@ -338,56 +350,50 @@ function OverlayApp() {
       </Show>
       <Show when={pending()}>
         {(p) => (
-          <div
-            class="glass fixed z-[75] w-80 rounded-2xl p-4"
-            style={{
-              left: `${p().client.x}px`,
-              top: `${p().client.y}px`,
-              transform: "translate(-8px, calc(-100% - 14px))",
-            }}
-            onPointerDown={(e) => e.stopPropagation()}
-          >
-            <textarea
-              class="h-20 w-full resize-none bg-transparent text-base leading-relaxed text-zinc-800 outline-none placeholder:text-zinc-300"
-              placeholder="What feels off?"
-              value={draft()}
-              onInput={(e) => setDraft(e.currentTarget.value)}
-              onKeyDown={(e) => {
-                e.stopPropagation()
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault()
-                  void commit()
-                }
-                if (e.key === "Escape") {
-                  setPending(undefined)
-                  arm(false)
-                }
-              }}
-              ref={(el) => requestAnimationFrame(() => el.focus())}
-            />
-            <div class="mt-2 flex items-center justify-between">
-              <span class="max-w-36 truncate font-mono text-base text-zinc-300">{p().selector.split(" > ").pop()}</span>
-              <div class="flex gap-4">
-                <button
-                  type="button"
-                  class="cursor-pointer text-base text-zinc-400 hover:text-zinc-900"
-                  onClick={() => {
+          <Floater anchor={() => p().client} keepOut={KEEP_OUT}>
+            <div class="glass w-80 rounded-2xl p-4">
+              <textarea
+                class="h-20 w-full resize-none bg-transparent text-base leading-relaxed text-zinc-800 outline-none placeholder:text-zinc-300"
+                placeholder="What feels off?"
+                value={draft()}
+                onInput={(e) => setDraft(e.currentTarget.value)}
+                onKeyDown={(e) => {
+                  e.stopPropagation()
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault()
+                    void commit()
+                  }
+                  if (e.key === "Escape") {
                     setPending(undefined)
                     arm(false)
-                  }}
-                >
-                  cancel
-                </button>
-                <button
-                  type="button"
-                  class="cursor-pointer text-base font-semibold text-zinc-900 hover:text-zinc-500"
-                  onClick={() => void commit()}
-                >
-                  pin
-                </button>
+                  }
+                }}
+                ref={(el) => requestAnimationFrame(() => el.focus())}
+              />
+              <div class="mt-2 flex items-center justify-between">
+                <span class="max-w-36 truncate font-mono text-base text-zinc-300">{p().selector.split(" > ").pop()}</span>
+                <div class="flex gap-4">
+                  <button
+                    type="button"
+                    class="cursor-pointer text-base text-zinc-400 hover:text-zinc-900"
+                    onClick={() => {
+                      setPending(undefined)
+                      arm(false)
+                    }}
+                  >
+                    cancel
+                  </button>
+                  <button
+                    type="button"
+                    class="cursor-pointer text-base font-semibold text-zinc-900 hover:text-zinc-500"
+                    onClick={() => void commit()}
+                  >
+                    pin
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          </Floater>
         )}
       </Show>
       <Peek

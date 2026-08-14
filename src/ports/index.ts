@@ -127,6 +127,8 @@ export interface SteerRegistration {
   mounter: Mounter
   /** Default author recorded on notes written from this host. */
   author?: string
+  /** What the bench calls the place its home link goes back to. */
+  appLabel?: string
 }
 
 export type PublishResult =

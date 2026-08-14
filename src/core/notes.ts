@@ -6,6 +6,10 @@ import type { SteerNote, NoteInput } from "./model"
 // injected so every transition is deterministic under test.
 
 /** The selector a note carries when it landed on the bench, not an element. */
+/** Marks a chrome mount point. Excluded from note anchors: it is our
+ *  scaffolding, not part of the host component. */
+export const SLOT_ATTR = "data-steer-slot"
+
 export const SURFACE_SELECTOR = "(bench)"
 
 /** What that selector was called before the surface was named "bench". */

@@ -1,5 +1,5 @@
 import type { SteerFixture, SteerManifest, SteerNote, DoctorReport } from "../core/model"
-import { SURFACE_SELECTOR } from "../core/notes"
+import { SLOT_ATTR, SURFACE_SELECTOR } from "../core/notes"
 
 // Framework-neutral browser client: the HTTP API calls and the DOM selector
 // builder every render surface shares. No framework imports here; the
@@ -64,8 +64,14 @@ export function selectorWithin(bench: HTMLElement, target: HTMLElement): string 
   const parts: string[] = []
   let el: HTMLElement | null = target
   while (el && el !== bench) {
-    const tag = el.tagName.toLowerCase()
     const parent: HTMLElement | null = el.parentElement
+    // The chrome mounts host components inside a display:contents slot. It is
+    // scaffolding, not part of the component, so it never appears in an anchor.
+    if (el.hasAttribute(SLOT_ATTR)) {
+      el = parent
+      continue
+    }
+    const tag = el.tagName.toLowerCase()
     let part = tag
     if (parent) {
       const siblings = Array.from(parent.children).filter(

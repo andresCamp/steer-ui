@@ -1,9 +1,14 @@
-import { registerComponents } from "../../../src/adapters/solid/data"
+import { publishRegistration } from "../../../src/core/bridge"
+import { solidMounter } from "../../../src/adapters/mount/solid"
 
 // Imported only by the virtual bench entry. The host app must not import this.
+//
+// This is the ONLY host-compiled part of steer-ui: the component glob, which
+// needs the host's own resolution and HMR, plus the Mounter for the host's
+// framework. Everything else is the chrome, which never enters this build.
 
-registerComponents(
-  {
+publishRegistration(globalThis, {
+  modules: {
     ...(import.meta.glob("./components/**/*.tsx", { eager: true }) as Record<
       string,
       Record<string, unknown>
@@ -13,5 +18,6 @@ registerComponents(
       Record<string, unknown>
     >),
   },
-  { author: "andres" },
-)
+  mounter: solidMounter,
+  author: "andres",
+})
