@@ -9,6 +9,7 @@ import { bridgeMismatch, publishRegistration, receiveRegistrations, PROTOCOL } f
 const stubMounter: Mounter = {
   id: "stub",
   mount: () => ({ update() {}, destroy() {} }),
+  element: () => undefined,
 }
 
 function registration(tag: string): SteerRegistration {

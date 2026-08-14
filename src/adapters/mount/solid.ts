@@ -13,6 +13,8 @@ import type { MountHandle, Mounter } from "../../ports"
 export const solidMounter: Mounter = {
   id: "solid",
 
+  element: solidElement,
+
   mount(el: HTMLElement, Component: unknown, props: Record<string, unknown>): MountHandle {
     const [current, setCurrent] = createSignal<Record<string, unknown>>(props)
 
@@ -48,4 +50,10 @@ export const solidMounter: Mounter = {
       },
     }
   },
+}
+
+/** Composed children: a component instance passed as a prop value. Called
+ *  during render, so it inherits the canvas's owner. */
+export function solidElement(Component: unknown, props: Record<string, unknown>): unknown {
+  return createComponent(Component as never, props as never)
 }

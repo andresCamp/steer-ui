@@ -1,7 +1,7 @@
 /**
  * @vitest-environment happy-dom
  */
-import { createEffect, type JSX } from "solid-js"
+import { createEffect, createRoot, type JSX } from "solid-js"
 import { act, createElement, useState as useReactState } from "react"
 import { describe, expect, it } from "vitest"
 import type { Mounter } from "../../ports"
@@ -25,6 +25,10 @@ interface Case {
   mounter: Mounter
   Probe: unknown
   flush: Flush
+  /** Runs fn inside this framework's ownership scope. element() creates the
+   *  instance under the current owner in Solid, so composing children outside
+   *  one would orphan its computations. */
+  owned: <T>(fn: () => T) => T
 }
 
 // Probes report the instance number they were created with. If update()
@@ -53,9 +57,54 @@ function ReactProbe(props: Record<string, unknown>) {
   )
 }
 
+// Composed children: a component instance handed to another as a PROP value.
+// These probes are deliberately effect-free so element() can be called outside
+// a reactive owner in the test without creating an orphan computation.
+
+function SolidInner(props: Record<string, unknown>): JSX.Element {
+  const el = document.createElement("em")
+  el.textContent = typeof props.label === "string" ? props.label : ""
+  return el as unknown as JSX.Element
+}
+
+function SolidWrapper(props: Record<string, unknown>): JSX.Element {
+  const el = document.createElement("section")
+  const child = props.children
+  if (child instanceof Node) el.appendChild(child)
+  return el as unknown as JSX.Element
+}
+
+function ReactInner(props: Record<string, unknown>) {
+  return createElement("em", null, typeof props.label === "string" ? props.label : "")
+}
+
+function ReactWrapper(props: Record<string, unknown>) {
+  return createElement("section", null, props.children as never)
+}
+
+interface Composed {
+  Wrapper: unknown
+  Inner: unknown
+}
+
+const COMPOSED: Record<string, Composed> = {
+  solid: { Wrapper: SolidWrapper, Inner: SolidInner },
+  react: { Wrapper: ReactWrapper, Inner: ReactInner },
+}
+
 const CASES: Record<string, Case> = {
-  solid: { mounter: solidMounter, Probe: SolidProbe, flush: (fn) => fn() },
-  react: { mounter: reactMounter, Probe: ReactProbe, flush: (fn) => act(fn) },
+  solid: {
+    mounter: solidMounter,
+    Probe: SolidProbe,
+    flush: (fn) => fn(),
+    owned: (fn) => createRoot(fn),
+  },
+  react: {
+    mounter: reactMounter,
+    Probe: ReactProbe,
+    flush: (fn) => act(fn),
+    owned: (fn) => fn(),
+  },
 }
 
 function host(): HTMLElement {
@@ -70,7 +119,7 @@ function probe(el: HTMLElement): HTMLElement {
   return found as HTMLElement
 }
 
-for (const [name, { mounter, Probe, flush }] of Object.entries(CASES)) {
+for (const [name, { mounter, Probe, flush, owned }] of Object.entries(CASES)) {
   describe(`Mounter contract: ${name}`, () => {
     it("reports its framework id", () => {
       expect(mounter.id).toBe(name)
@@ -141,6 +190,34 @@ for (const [name, { mounter, Probe, flush }] of Object.entries(CASES)) {
         })
       ).not.toThrow()
       expect(el.innerHTML).toBe("")
+    })
+
+    it("element() produces a value usable as a prop (composed children)", () => {
+      const { Wrapper, Inner } = COMPOSED[name]!
+      const el = host()
+      owned(() =>
+        flush(() =>
+          void mounter.mount(el, Wrapper, {
+            children: mounter.element(Inner, { label: "nested" }),
+          })
+        )
+      )
+      expect(el.querySelector("section em")?.textContent).toBe("nested")
+    })
+
+    it("element() nests recursively", () => {
+      const { Wrapper, Inner } = COMPOSED[name]!
+      const el = host()
+      owned(() =>
+        flush(() =>
+          void mounter.mount(el, Wrapper, {
+            children: mounter.element(Wrapper, {
+              children: mounter.element(Inner, { label: "deep" }),
+            }),
+          })
+        )
+      )
+      expect(el.querySelector("section section em")?.textContent).toBe("deep")
     })
 
     it("mounts are independent of one another", () => {

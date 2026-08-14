@@ -99,6 +99,19 @@ export interface Mounter {
     Component: unknown,
     props: Record<string, unknown>
   ): MountHandle
+  /**
+   * A framework-native element usable as a PROP VALUE, not mounted into a DOM
+   * node of its own. This is what fixture `{"$component": ...}` refs compile
+   * to: composed children serialized in a state URL, which is the thing
+   * Storybook cannot address. Solid returns createComponent, React
+   * createElement, Vue h.
+   *
+   * Ownership: frameworks with an owner tree (Solid) create the instance under
+   * whatever scope is current, so this must be called inside the mounting
+   * scope, not ahead of it. React and Vue return inert descriptions and do not
+   * care.
+   */
+  element(Component: unknown, props: Record<string, unknown>): unknown
 }
 
 // The bridge. Once the chrome ships prebuilt, it and the host's register entry

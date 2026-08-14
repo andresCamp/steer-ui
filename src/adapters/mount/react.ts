@@ -11,6 +11,8 @@ import type { MountHandle, Mounter } from "../../ports"
 export const reactMounter: Mounter = {
   id: "react",
 
+  element: reactElement,
+
   mount(el: HTMLElement, Component: unknown, props: Record<string, unknown>): MountHandle {
     const root: Root = createRoot(el)
     root.render(createElement(Component as never, props as never))
@@ -28,4 +30,10 @@ export const reactMounter: Mounter = {
       },
     }
   },
+}
+
+/** Composed children: a component instance passed as a prop value. React
+ *  elements are inert descriptions, so this is owner-free. */
+export function reactElement(Component: unknown, props: Record<string, unknown>): unknown {
+  return createElement(Component as never, props as never)
 }
