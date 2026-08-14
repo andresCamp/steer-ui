@@ -123,12 +123,21 @@ const SPECIMENS: Specimen[] = [
   },
 ]
 
+/** How far clear of its component a pin sits. A pin is 28px, so this leaves a
+ *  visible gap under the thing rather than resting on its edge. */
+const PIN_CLEAR = 26
+
 interface Scene {
   id: string
   kind: "pin" | "region"
-  /** Where on the tile a pin lands, as fractions of its box. A region is
-   *  centred on the component instead, so it has no spot to name. */
+  /** Where the hand lands, as fractions of the component's own box — and so,
+   *  since the pin goes where the cursor goes, where the pin ends up. A region
+   *  is centred on the component instead, so it has no spot to name. */
   at?: Point
+  /** Pixels to push that point clear of the component. In px, not fractions:
+   *  a fraction of a tall component clears it by more than the same fraction
+   *  of a short one, and the gap wants to look the same on every one. */
+  nudge?: Point
   selector: string
   note: string
   reply: string
@@ -143,7 +152,10 @@ const SCENES: Scene[] = [
   {
     id: "field",
     kind: "pin",
-    at: { x: 0.34, y: 0.72 },
+    // Off the field's leading bottom corner. On it, the pin sat over the very
+    // label and rule the note is about.
+    at: { x: 0.07, y: 1 },
+    nudge: { x: 0, y: PIN_CLEAR },
     selector: "MaterialField",
     note: "The label collides with the underline when it shrinks.",
     reply: "Lifted the floating label clear of the rule and matched the focus colour.",
@@ -163,7 +175,10 @@ const SCENES: Scene[] = [
   {
     id: "switch",
     kind: "pin",
-    at: { x: 0.07, y: 0.28 },
+    // Under the switch rather than on it, so the track stays readable while
+    // the note complains about it.
+    at: { x: 0.05, y: 1 },
+    nudge: { x: 0, y: PIN_CLEAR },
     selector: "ShadcnSwitch",
     note: "Off reads as disabled, not as a choice.",
     reply: "Raised the track contrast so off is clearly still yours to flip.",
@@ -312,15 +327,33 @@ export default function HeroCanvas() {
   }
 
   /**
+   * The component's own box. A pin's spot is measured against this rather than
+   * the tile, because tiles are fixed-width slots and the same fraction of a
+   * slot lands somewhere different for every component sitting in one.
+   */
+  const pinBoxOf = (id: string): Box | null => {
+    const root = tiles.get(id)?.querySelector(".swap-in")?.firstElementChild
+    if (!root) return null
+    const r = root.getBoundingClientRect()
+    return { x: r.left, y: r.top, w: r.width, h: r.height }
+  }
+
+  /**
    * The box a drag has to leave behind: centred on the component and never
    * smaller than Region's own minimums. Drawn box and dragged box are the
    * same box, so the cursor finishes on the corner it pulled.
    */
   const regionBoxOf = (id: string, fallback: Box): Box => {
     const c = contentBoxOf(id) ?? fallback
-    const w = Math.max(REGION_MIN_W, c.w + REGION_PAD_X * 2)
+    // The drag ends on this box's far corner and the pin is centred there, so
+    // the box has to stop a pin's radius plus a margin short of the edge or
+    // the pin hangs off the screen. A phone is where this bites: the padding
+    // that gives a component room on a desktop is most of a phone's width.
+    const edge = PIN_CLEAR + 12
+    const w = Math.min(Math.max(REGION_MIN_W, c.w + REGION_PAD_X * 2), window.innerWidth - edge * 2)
     const h = Math.max(REGION_MIN_H, c.h + REGION_PAD_Y * 2)
-    return { x: c.x + c.w / 2 - w / 2, y: c.y + c.h / 2 - h / 2, w, h }
+    const x = Math.max(edge, Math.min(c.x + c.w / 2 - w / 2, window.innerWidth - w - edge))
+    return { x, y: c.y + c.h / 2 - h / 2, w, h }
   }
 
   /** One throw of the cursor, bending one way and correcting if it is far. */
@@ -376,9 +409,11 @@ export default function HeroCanvas() {
     if (!box) return
     const drawn = scene.kind === "region" ? regionBoxOf(scene.id, box) : null
     const spot = scene.at ?? { x: 0.5, y: 0.5 }
+    const on = pinBoxOf(scene.id) ?? box
+    const off = scene.nudge ?? { x: 0, y: 0 }
     const anchor = drawn
       ? { x: drawn.x, y: drawn.y }
-      : { x: box.x + box.w * spot.x, y: box.y + box.h * spot.y }
+      : { x: on.x + on.w * spot.x + off.x, y: on.y + on.h * spot.y + off.y }
 
     await moveTo(anchor, Math.min(box.w, 140))
     await sleep(180)
