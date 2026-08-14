@@ -10,3 +10,4 @@ site/public/__steer/api/
 site/.astro/
 .wrangler
 .dev.vars*
+playground/vue-app/.steer/manifest.json

@@ -57,7 +57,7 @@ bench can drive it.
 |---|---|
 | Solid (`adapters/mount/solid.ts`, ~60 loc) | **Built + contract-tested + browser-verified** |
 | React (`adapters/mount/react.ts`, ~45 loc) | **Built + contract-tested + browser-verified** |
-| Vue 3 (`adapters/mount/vue.ts`, ~50 loc) | **Built + contract-tested**; extraction verified end to end against a live host, rendering not yet exercised in a real Vue host |
+| Vue 3 (`adapters/mount/vue.ts`, ~50 loc) | **Built + contract-tested + browser-verified** against `playground/vue-app`: SFCs extracted, rendered in the chrome, composed children from a state URL, knob change patching in place |
 | Svelte 5 (`adapters/mount/svelte.svelte.ts`, ~60 loc) | **Built + contract-tested**; not yet exercised against a real Svelte host |
 
 All four pass the same 13 invariants. Vue and Svelte were added without a single
@@ -92,7 +92,8 @@ host already runs the Svelte plugin.
 
 | Host | Notes |
 |---|---|
-| (none yet) | First application should pressure-test install + work + doctor + uninstall and feed corrections back into the playbooks |
+| `playground/vue-app` (lab) | A real Vue 3 host on the prebuilt Solid chrome. Found three things unit tests could not: SFC default exports were not registered, the usage scan skipped SFC markup, and the chrome asset was served cacheable |
+| (no external host yet) | First real application should pressure-test install + work + doctor + uninstall and feed corrections back into the playbooks |
 
 ## What a host actually compiles
 

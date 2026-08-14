@@ -20,13 +20,30 @@ export let steerAuthor = "human"
 /** What the bench calls the place its home link goes back to. */
 export let steerAppLabel = "app"
 
+/** SFC convention: one component per file, named after the file, exported as
+ *  default. Nothing else in the module is a component. */
+function sfcName(path: string): string | undefined {
+  const base = path.split("/").pop() ?? path
+  const name = base.replace(/\.(vue|svelte)$/, "")
+  return /^[A-Z][A-Za-z0-9_]*$/.test(name) ? name : undefined
+}
+
 export function registerComponents(
   modules: Record<string, Record<string, unknown>>,
   options: { author?: string; appLabel?: string } = {}
 ): void {
   if (options.author) steerAuthor = options.author
   if (options.appLabel) steerAppLabel = options.appLabel
-  for (const mod of Object.values(modules)) {
+  for (const [path, mod] of Object.entries(modules)) {
+    // A Vue or Svelte SFC compiles to a default export that is an OBJECT, not
+    // a capitalized function, so the TSX rules below would silently skip it and
+    // the bench would list the component with nothing to render. The manifest
+    // names SFCs after their file, so the registry has to agree.
+    const fromFile = sfcName(path)
+    if (fromFile && mod.default) {
+      registry[fromFile] = mod.default
+      continue
+    }
     for (const [exportName, value] of Object.entries(mod)) {
       if (typeof value === "function" && /^[A-Z]/.test(exportName)) {
         registry[exportName] = value

@@ -205,7 +205,7 @@ The playground app is the reference deployment and MUST stay runnable offline: `
 
 | Item | Status |
 |---|---|
-| A Vue or Svelte host exercised end to end | Mounters and extractors both exist and are tested, and Vue extraction is verified against a live host. What is untested is a real Vue/Svelte host rendering its own components in the bench |
+| A Svelte host exercised end to end | Vue is done (`playground/vue-app`). Svelte has a contract-tested mounter and extractor but no playground host, so nothing has rendered a `.svelte` component in the bench yet |
 | Next.js surface mounting (router mapping for the React surface) | Recipe drafted in the install playbook; not exercised against a real Next host |
 | Two surfaces to keep in lockstep | Solid is the reference; every canvas change must be ported to `adapters/react/` in the same commit |
 | Checked extraction cost | A TS program per regeneration; opt-in per host, debounce absorbs it in practice |

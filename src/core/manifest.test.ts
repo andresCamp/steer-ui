@@ -104,3 +104,32 @@ describe("buildManifest", () => {
     expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b)))
   })
 })
+
+describe("usage scan across language surfaces", () => {
+  // The "diff" verb is impact analysis: edit Button, re-verify what composes
+  // it. A tag in a Vue or Svelte template is a usage exactly as a JSX one is,
+  // and missing them silently narrows what the agent knows to re-check.
+  it("finds component usages inside Vue and Svelte markup", () => {
+    const manifest = buildManifest({
+      root: "/app",
+      generatedAt: "2026-01-01T00:00:00.000Z",
+      componentFiles: [
+        {
+          path: "src/components/Button.tsx",
+          source: `export interface ButtonProps { label?: string }
+export function Button(props: ButtonProps) { return <button>{props.label}</button> }`,
+        },
+      ],
+      scanFiles: [
+        { path: "src/pages/Page.vue", source: `<template><Button label="x" /></template>` },
+        { path: "src/pages/Page.svelte", source: `<Button label="y" />` },
+        { path: "src/pages/notes.ts", source: `const s = "<Button />"` },
+      ],
+    })
+    const button = manifest.components.find((c) => c.name === "Button")
+    expect(button?.usages.map((u) => u.file).sort()).toEqual([
+      "src/pages/Page.svelte",
+      "src/pages/Page.vue",
+    ])
+  })
+})

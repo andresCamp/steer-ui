@@ -18,7 +18,8 @@
     "playground": "bun playground/run.ts",
     "build": "pnpm -C site install --frozen-lockfile && pnpm -C site run build",
     "deploy": "wrangler deploy",
-    "build:chrome": "vite build --config vite.chrome.config.ts"
+    "build:chrome": "vite build --config vite.chrome.config.ts",
+    "dev:vue": "pnpm build:chrome && vite playground/vue-app"
   },
   "dependencies": {
     "@floating-ui/dom": "^1.8.0",
@@ -38,6 +39,7 @@
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "@vitejs/plugin-react": "^4.7.0",
+    "@vitejs/plugin-vue": "^6.0.8",
     "happy-dom": "^20.11.2",
     "svelte": "^5.56.9",
     "tailwindcss": "^4.1.11",

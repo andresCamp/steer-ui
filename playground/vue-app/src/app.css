@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+body {
+  @apply bg-[#f7f7f8] text-zinc-900 antialiased;
+  font-feature-settings: "cv05", "ss01";
+}

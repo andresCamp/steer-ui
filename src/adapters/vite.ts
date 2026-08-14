@@ -226,6 +226,10 @@ async function serveChrome(pathname: string, res: ServerResponse): Promise<boole
   const file = path.resolve(dir, name)
   if (!file.startsWith(dir) || !fs.existsSync(file)) return false
   res.setHeader("Content-Type", CHROME_TYPES[path.extname(file)] ?? "application/octet-stream")
+  // The chrome is a build artifact served under a stable, unhashed name. Left
+  // cacheable, a rebuilt chrome would not reach a browser that already has one,
+  // which reads as "my change did nothing". This is a dev server; never cache.
+  res.setHeader("Cache-Control", "no-store")
   res.end(await fs.promises.readFile(file))
   return true
 }

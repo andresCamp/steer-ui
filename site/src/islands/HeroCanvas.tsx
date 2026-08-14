@@ -215,7 +215,10 @@ const panelWidth = () => (window.innerWidth < 640 ? PANEL_XS : PANEL)
  *  a phone the dead reply box is hidden (see .note-opaque in global.css), so
  *  the same thread finishes shorter. */
 const PANEL_H = 300
-const PANEL_H_XS = 200
+/** Measured, not guessed: a phone thread finishes at 218px with the longest
+ *  of the three replies in it. Under-reserving let the note run past the
+ *  bottom of the stage. */
+const PANEL_H_XS = 220
 const panelHeight = () => (window.innerWidth < 640 ? PANEL_H_XS : PANEL_H)
 
 /** Air between a tile and the note hanging off it. */
@@ -644,11 +647,7 @@ export default function HeroCanvas() {
             </div>
           )}
         </For>
-        {/* The note is absolutely positioned and cannot be a flex child, so its
-            room is held open by a spacer. This is what centres the tile. */}
-        <Show when={narrow()}>
-          <div class="shrink-0" style={{ height: `${PANEL_H_XS + NOTE_GAP}px` }} aria-hidden="true" />
-        </Show>
+
       </div>
 
       {/* Everything the cursor makes sits above the vignette. */}

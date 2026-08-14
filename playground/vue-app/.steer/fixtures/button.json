@@ -1,0 +1,10 @@
+{
+  "states": {
+    "default": {},
+    "secondary": { "variant": "secondary", "label": "Cancel" },
+    "destructive": { "variant": "destructive", "label": "Delete" },
+    "ghost": { "variant": "ghost", "label": "Dismiss" },
+    "large": { "size": "lg", "label": "Continue" },
+    "disabled": { "disabled": "true", "label": "Saving" }
+  }
+}

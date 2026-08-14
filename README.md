@@ -22,6 +22,7 @@ Built as an [onc9 primitive](SPEC.md): a pure hexagonal engine (`src/`), an offl
 pnpm install
 pnpm dev        # Solid visual bench: app at :5199, steer-ui at /__steer
 pnpm dev:react  # React visual bench: same thing at :5299
+pnpm dev:vue    # Vue visual bench: same thing at :5399
 pnpm playground # CLI bench: the full engine loop, offline and deterministic
 pnpm test       # invariant-pinned tests
 pnpm check-types
@@ -41,7 +42,8 @@ src/adapters    memory, node-fs, http (shared routes), vite + node-server
                 all pinned by one shared contract suite
   chrome/       the bench + overlay, built ONCE into dist/chrome and served as
                 an asset the host never compiles
-playground      CLI bench + Solid and React host apps as visual benches
+playground      CLI bench + Solid, React and Vue host apps as visual benches,
+                all three driven by the same prebuilt chrome
 skills/steer-ui the agent front door: install / work / doctor / uninstall
 ```
 

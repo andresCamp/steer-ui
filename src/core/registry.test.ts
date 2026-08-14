@@ -42,6 +42,31 @@ describe("registerComponents", () => {
     expect(registry["Card.Actions"]).toBe(CardActions)
   })
 
+  // A Vue/Svelte SFC compiles to a default export that is an object, not a
+  // capitalized function. Without this the manifest lists the component and the
+  // registry has nothing to render, which is a blank bench with no explanation.
+  it("registers an SFC default export under its file name", () => {
+    const VueCard = { render: () => null }
+    registerComponents({ "./components/Card.vue": { default: VueCard } })
+    expect(registry.Card).toBe(VueCard)
+  })
+
+  it("registers a Svelte SFC the same way", () => {
+    const SvelteRow = { $$: true }
+    registerComponents({ "./components/Row.svelte": { default: SvelteRow } })
+    expect(registry.Row).toBe(SvelteRow)
+  })
+
+  it("ignores an SFC whose file name is not a component name", () => {
+    registerComponents({ "./components/index.vue": { default: {} } })
+    expect(Object.keys(registry)).toEqual([])
+  })
+
+  it("does not treat a .tsx default export as an SFC", () => {
+    registerComponents({ "./components/Thing.tsx": { default: () => null, Thing: Button } })
+    expect(registry.Thing).toBe(Button)
+  })
+
   it("takes author and app label from options", () => {
     registerComponents({}, { author: "andres", appLabel: "playground" })
     expect(steerAuthor).toBe("andres")

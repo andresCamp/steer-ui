@@ -26,6 +26,8 @@ export interface ManifestInput {
   config?: Partial<SteerConfig>
 }
 
+const MARKUP = [".tsx", ".vue", ".svelte"]
+
 function scanUsages(
   scanFiles: SourceFile[],
   components: { name: string; file: string }[],
@@ -34,9 +36,11 @@ function scanUsages(
   const usages = new Map<string, SteerUsage[]>()
   for (const c of components) usages.set(c.name, [])
   for (const { path: rel, source } of scanFiles) {
-    // Only JSX files can contain usages; .ts files ride along for the
-    // checker but stay out of the scan.
-    if (!rel.endsWith(".tsx")) continue
+    // Files that can contain markup. .ts rides along for the checker but has
+    // no tags to find, so it stays out. A <Button /> in a Vue or Svelte
+    // template is every bit as much a usage as one in JSX, and impact analysis
+    // ("edit Button, re-verify Card") is useless without them.
+    if (!MARKUP.some((ext) => rel.endsWith(ext))) continue
     // The steer's own rendering machinery does not count as usage.
     if (config.excludeDirs.some((dir) => rel.startsWith(dir))) continue
     const internal = rel.startsWith(config.componentDir)
