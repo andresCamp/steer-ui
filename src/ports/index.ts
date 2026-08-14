@@ -1,4 +1,5 @@
 import type {
+  SteerComponentSpec,
   SteerFixture,
   SteerManifest,
   SteerNote,
@@ -72,6 +73,8 @@ export interface EngineDeps {
   notes?: NoteStore
   clock?: Clock
   ids?: Ids
+  /** Language-surface readers. Defaults to TSX + Vue + Svelte. */
+  extractors?: Extractor[]
   config?: { componentDir?: string; excludeDirs?: string[]; typecheck?: boolean }
 }
 
@@ -134,3 +137,15 @@ export interface SteerRegistration {
 export type PublishResult =
   | { ok: true; queued: boolean }
   | { ok: false; reason: "protocol-mismatch"; expected: number; found: number }
+
+// Extraction is the second seam a framework enters through. TSX is syntactic;
+// .vue and .svelte carry their props in a <script> block, so they need their own
+// reader. All of them answer the same question: given one source file, which
+// components does it declare and what are their knobs?
+
+export interface Extractor {
+  readonly id: string
+  /** File extensions this reader claims, e.g. [".tsx"] or [".vue"]. */
+  readonly extensions: string[]
+  extract(file: SourceFile): Omit<SteerComponentSpec, "usages">[]
+}

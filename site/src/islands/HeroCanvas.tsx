@@ -187,8 +187,6 @@ const SCENES: Scene[] = [
   },
 ]
 
-const SCENE_IDS = new Set(SCENES.map((s) => s.id))
-
 interface Box {
   x: number
   y: number
@@ -237,8 +235,16 @@ const stageRect = (): Rect => {
   return r ? { top: r.top, h: r.height } : { top: 0, h: 0 }
 }
 
-/** On a phone the note is wider than the gap beside any tile, so it can only
- *  go under the thing it is about. `clear` is that thing's box. */
+/**
+ * Where the note panel goes. On a phone it is wider than the gap beside any
+ * component, so it can only sit above or below the one it is about — and it
+ * must not sit on it, because the whole payoff is watching that component
+ * change while the answer streams in.
+ *
+ * Below by default, flipped above when below would run out of the stage. The
+ * pin does not move: a pin is anchored to the spot the hand touched, a panel
+ * is merely positioned near it.
+ */
 const clamp = (p: Point, clear?: Box, stage?: Rect): Point => {
   const x = Math.max(16, Math.min(p.x, window.innerWidth - panelWidth() - 16))
   const xs = window.innerWidth < 640
@@ -246,18 +252,25 @@ const clamp = (p: Point, clear?: Box, stage?: Rect): Point => {
     const hi = window.innerHeight - PANEL_H - 12
     return { x, y: Math.min(Math.max(p.y, 16), Math.max(16, hi)) }
   }
-  // The stage reserves the note's room below the tile, so the note lands in
-  // the space flexbox already set aside for it.
-  const lo = clear ? clear.y + clear.h + NOTE_GAP : stage.top
-  const hi = stage.top + stage.h - PANEL_H_XS
-  if (lo > hi) return { x, y: Math.max(stage.top, hi) }
-  return { x, y: Math.min(Math.max(p.y, lo), hi) }
+  const top = stage.top
+  const bottom = stage.top + stage.h
+  const fit = (y: number) => Math.max(top, Math.min(y, bottom - PANEL_H_XS))
+  if (!clear) return { x, y: fit(p.y) }
+
+  const below = clear.y + clear.h + NOTE_GAP
+  const above = clear.y - NOTE_GAP - PANEL_H_XS
+  if (below + PANEL_H_XS <= bottom) return { x, y: below }
+  if (above >= top) return { x, y: above }
+  // Neither side holds a whole panel: take the roomier one, and let the
+  // overrun go where the stage has slack rather than over the component.
+  const roomBelow = bottom - below
+  const roomAbove = clear.y - NOTE_GAP - top
+  return { x, y: fit(roomBelow >= roomAbove ? below : above) }
 }
 
 export default function HeroCanvas() {
   const [wide, setWide] = createSignal(true)
   const [narrow, setNarrow] = createSignal(false)
-  const [staged, setStaged] = createSignal(SCENES[0].id)
   /** Row two's box. Measured, because only the grid knows how tall it is once
    *  the copy above it has wrapped. */
   const [stage, setStage] = createSignal<Rect>({ top: 0, h: 0 })
@@ -400,11 +413,6 @@ export default function HeroCanvas() {
   }
 
   async function playScene(scene: Scene, index: number) {
-    // On a phone the tile has to be on stage before it can be measured.
-    if (narrow() && staged() !== scene.id) {
-      setStaged(scene.id)
-      await sleep(520)
-    }
     const box = boxOf(scene.id)
     if (!box) return
     const drawn = scene.kind === "region" ? regionBoxOf(scene.id, box) : null
@@ -448,7 +456,7 @@ export default function HeroCanvas() {
     // point of a pull, the click point of a tap. Never a corner of the box.
     const foot = cursor()
     setPin({ x: foot.x, y: foot.y, label: String(index + 1) })
-    const panel = clamp({ x: foot.x, y: foot.y + NOTE_GAP }, narrow() ? box : undefined, stage())
+    const panel = clamp({ x: foot.x, y: foot.y + NOTE_GAP }, narrow() ? (drawn ?? on) : undefined, stage())
     setPending({ x: panel.x, y: panel.y, selector: scene.selector, text: "" })
     await sleep(260)
     await typeOut(scene.note)
@@ -566,7 +574,6 @@ export default function HeroCanvas() {
         // Back to the top: the components return to their drafts.
         setSettled([])
         setRefined([])
-        setStaged(SCENES[0].id)
         setMount((m) => {
           const next = { ...m }
           for (const s of SCENES) next[s.id] = (next[s.id] ?? 1) + 1
@@ -602,7 +609,7 @@ export default function HeroCanvas() {
       */}
       <div
         class={`pointer-events-none absolute inset-0 ${
-          narrow() ? "flex flex-col justify-center-safe" : ""
+          narrow() ? "flex flex-col justify-center-safe gap-4" : ""
         }`}
         style={narrow() ? { top: `${stage().top}px`, height: `${stage().h}px`, bottom: "auto" } : undefined}
       >
@@ -612,7 +619,7 @@ export default function HeroCanvas() {
               ref={(el) => tiles.set(s.id, el)}
               class={`pointer-events-auto absolute max-sm:static max-sm:shrink-0 ${
                 s.small ? "hidden xl:block" : ""
-              } ${narrow() && (s.hideXs || (SCENE_IDS.has(s.id) && staged() !== s.id)) ? "hidden" : ""} ${
+              } ${narrow() && s.hideXs ? "hidden" : ""} ${
                 s.side === "right" ? "max-sm:mr-[5%] max-sm:self-end" : "max-sm:ml-[5%] max-sm:self-start"
               }`}
               style={{ ...spotOf(s), width: `${widthOf(s)}px` }}

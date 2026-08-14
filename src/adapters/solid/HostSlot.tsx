@@ -37,6 +37,19 @@ export function HostSlot(props: HostSlotProps) {
       handle?.destroy()
       handle = undefined
       mounted = undefined
+      // Invariant 4: degrade VISIBLY. The manifest is derived from source, so
+      // it can list a component this host cannot instantiate: a .vue file in a
+      // Solid host, or a registry glob that missed it. Rendering nothing would
+      // read as "this component is empty" rather than "nothing mounted it".
+      slot.replaceChildren()
+      if (!mount) return
+      const note = document.createElement("p")
+      note.setAttribute("data-steer-unresolved", props.name)
+      note.style.cssText =
+        "margin:0;padding:12px 16px;border:1px dashed rgba(0,0,0,.2);border-radius:10px;" +
+        "font:14px ui-monospace,SFMono-Regular,Menlo,monospace;color:#71717a"
+      note.textContent = `${props.name} is in the manifest but not registered here`
+      slot.appendChild(note)
       return
     }
 

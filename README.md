@@ -30,12 +30,13 @@ pnpm check-types
 ## Layout
 
 ```
-src/core        pure engine: extraction (syntactic + type-checked), manifest,
-                state URLs, notes, registry, bridge, doctor
+src/core        pure engine: TSX extraction (syntactic + type-checked),
+                manifest, state URLs, notes, registry, bridge, doctor
 src/ports       the contract; SourceStore+ManifestStore required, rest optional;
                 Mounter is the one seam a framework enters through
 src/adapters    memory, node-fs, http (shared routes), vite + node-server
                 (driving), client (shared)
+  extract/      .vue and .svelte readers, same prop classifier as TSX
   mount/        one small file per framework (solid, react, vue, svelte),
                 all pinned by one shared contract suite
   chrome/       the bench + overlay, built ONCE into dist/chrome and served as
@@ -71,6 +72,7 @@ Agent-authored notes and replies render with indigo accents so authorship is vis
 - Compound components work via both idioms: expando assignment (`Card.Actions = CardActions`) and `export const Toolbar = Object.assign(ToolbarRoot, { Spacer: ToolbarSpacer })`. Targets should also be named exports (dev-mode HMR wrappers hide runtime properties; the manifest records the target name as a fallback). The manifest lists only the dotted name; usage scan matches `<Card.Actions`.
 - Component names must be unique across the library. Duplicates get de-collided slugs and a `warnings` entry in the manifest.
 - Props declared as `interface <Name>Props` (or type alias with a type literal) in the same file as the component.
+- Vue and Svelte components are read from their `<script>` block: Vue's type-only `defineProps<T>()` and Svelte 5's annotated `$props()`. One component per file, named after the file. Same knobs, same JSDoc, same degradation as TSX.
 - Enum knobs come from string or numeric literal unions. Imported prop types and computed types show as unsupported (visible in the manifest, no knob): the same graceful-degradation stance as react-docgen.
 - The usage scan covers the app AND the library itself; intra-library usages are tagged `internal` (impact analysis: edit Button, re-verify Card).
 

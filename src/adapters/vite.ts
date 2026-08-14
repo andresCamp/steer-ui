@@ -4,6 +4,9 @@ import type { ServerResponse } from "node:http"
 import { fileURLToPath } from "node:url"
 import type { Plugin, ViteDevServer } from "vite"
 import { createEngine } from "../core/engine"
+import { tsxExtractor } from "../core/extract"
+import { svelteExtractor } from "./extract/svelte"
+import { vueExtractor } from "./extract/vue"
 import type { SteerEngine } from "../ports"
 import { handleSteerRequest } from "./http"
 import { fsFixtures, fsManifest, fsNotes, fsSources } from "./node-fs"
@@ -27,6 +30,10 @@ export interface SteerPluginOptions {
    *  the way they do in the app. The chrome's own CSS ships with the chrome. */
   styles?: string
 }
+
+// Composition root: every language-surface reader a host might need. Core stays
+// unaware of these; a TSX-only project simply has no SFCs to read.
+const DEFAULT_EXTRACTORS = [tsxExtractor, vueExtractor, svelteExtractor]
 
 const STEER_DIR = ".steer"
 // The only module the HOST compiles: its stylesheet and its register entry.
@@ -67,6 +74,7 @@ export function steer(options: SteerPluginOptions = {}): Plugin {
           extraComponentDirs: options.extraComponentDirs,
         }),
         manifestStore: fsManifest(root),
+        extractors: DEFAULT_EXTRACTORS,
         fixtures: fsFixtures(root),
         notes: fsNotes(root),
         config: {

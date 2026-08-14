@@ -1,6 +1,7 @@
 import type { SteerEngine, EngineDeps } from "../ports"
 import { runDoctor } from "./doctor"
 import { buildManifest } from "./manifest"
+import { tsxExtractor } from "./extract"
 import { createNote, moveNoteById, replyToNoteById, resolveNoteById } from "./notes"
 import type { SteerFixture, SteerManifest, SteerNote, NoteInput } from "./model"
 
@@ -28,6 +29,9 @@ export function createEngine(deps: EngineDeps): SteerEngine {
       generatedAt: clock.now(),
       componentFiles: await deps.sources.componentFiles(),
       scanFiles: await deps.sources.scanFiles(),
+      // Core only knows the TSX reader. SFC readers are adapters, so the
+      // driving adapters supply them: core never reaches outward.
+      extractors: deps.extractors ?? [tsxExtractor],
       config: deps.config,
     })
 

@@ -119,6 +119,7 @@ src/
     ├── node-server.ts     driving adapter: standalone API server for
     │                      non-Vite hosts (proxy target; regen-on-read)
     ├── client.ts          framework-neutral browser client + selector
+    ├── extract/           SFC readers: vue.ts, svelte.ts (TSX lives in core)
     ├── mount/             one file per framework: solid, react, vue, svelte
     ├── solid/             the chrome's components (built, never host-compiled)
     └── chrome/            bench + overlay entries -> dist/chrome/*
@@ -204,7 +205,7 @@ The playground app is the reference deployment and MUST stay runnable offline: `
 
 | Item | Status |
 |---|---|
-| Svelte/Vue extractors | Named gap. The Mounters exist and are contract-tested; what is missing is source extraction for SFCs (`vue-component-meta`, or `svelte2tsx` into the checked extractor) |
+| A Vue or Svelte host exercised end to end | Mounters and extractors both exist and are tested, and Vue extraction is verified against a live host. What is untested is a real Vue/Svelte host rendering its own components in the bench |
 | Next.js surface mounting (router mapping for the React surface) | Recipe drafted in the install playbook; not exercised against a real Next host |
 | Two surfaces to keep in lockstep | Solid is the reference; every canvas change must be ported to `adapters/react/` in the same commit |
 | Checked extraction cost | A TS program per regeneration; opt-in per host, debounce absorbs it in practice |

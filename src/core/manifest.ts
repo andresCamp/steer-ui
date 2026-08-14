@@ -1,4 +1,5 @@
-import { extractComponents } from "./extract"
+import type { Extractor } from "../ports"
+import { extractComponents, tsxExtractor } from "./extract"
 import { upgradePropsChecked } from "./extract-checked"
 import {
   DEFAULT_CONFIG,
@@ -20,6 +21,8 @@ export interface ManifestInput {
   componentFiles: SourceFile[]
   /** All files eligible for the usage scan (typically every .tsx under src/). */
   scanFiles: SourceFile[]
+  /** Readers, one per language surface. Defaults to TSX alone. */
+  extractors?: Extractor[]
   config?: Partial<SteerConfig>
 }
 
@@ -66,12 +69,21 @@ export function buildManifest(input: ManifestInput): SteerManifest {
   }
   let specs: Omit<SteerComponentSpec, "usages">[] = []
   const warnings: string[] = []
+  // One reader per language surface, chosen by extension. A file no reader
+  // claims is skipped rather than guessed at.
+  const extractors = input.extractors ?? [tsxExtractor]
   for (const file of input.componentFiles) {
-    for (const spec of extractComponents(file.path, file.source)) {
+    const extractor = extractors.find((e) =>
+      e.extensions.some((ext: string) => file.path.endsWith(ext))
+    )
+    if (!extractor) continue
+    for (const spec of extractor.extract(file)) {
       specs.push(spec)
     }
   }
   if (config.typecheck) {
+    // The checker builds a TS program, so it can only upgrade specs that came
+    // from a TS source. SFC props stay syntactic.
     // The checker needs everything the Props types can reach, not just the
     // component files (imported types live anywhere in the scanned tree).
     const reachable = [...new Map(

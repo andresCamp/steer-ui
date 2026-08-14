@@ -71,6 +71,18 @@ describe("framework boundary", () => {
     }
   })
 
+  // The hexagon's direction of dependency. Core is the domain; adapters bind it
+  // to a technology. Core reaching into adapters inverts that and is how a pure
+  // engine quietly acquires a dependency on Vue's file format.
+  it("keeps core from importing adapters", () => {
+    for (const file of sourcesUnder(path.join(SRC, "core"))) {
+      const source = readFileSync(file, "utf8")
+      expect(source, `${path.relative(SRC, file)} imports an adapter`).not.toMatch(
+        /from\s+["'][^"']*\/adapters\//
+      )
+    }
+  })
+
   // The bridge is the one module both artifacts load. If it ever pulls in a
   // framework, the prebuilt chrome stops being host-agnostic.
   it("keeps the bridge importing nothing at all", () => {

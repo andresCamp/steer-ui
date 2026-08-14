@@ -53,12 +53,16 @@ export function fsSources(
   const scanDir = options.scanDir ?? "src"
   return {
     componentFiles: async () => {
-      const batches = await Promise.all(dirs.map((dir) => readSources(root, dir, ".tsx")))
+      const batches = await Promise.all(
+        dirs.map((dir) => readSources(root, dir, [".tsx", ".vue", ".svelte"]))
+      )
       return batches.flat()
     },
     // .ts included so checked extraction can reach imported type modules;
     // the usage scan only pattern-matches JSX so plain .ts files are inert.
-    scanFiles: () => readSources(root, scanDir, [".tsx", ".ts"]),
+    // SFCs are scanned too: a <Button /> usage inside a .vue or .svelte
+    // template is still a usage, which is what impact analysis needs.
+    scanFiles: () => readSources(root, scanDir, [".tsx", ".ts", ".vue", ".svelte"]),
     root: () => root,
   }
 }

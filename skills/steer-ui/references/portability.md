@@ -8,7 +8,20 @@ What exists, what is a named gap. Promote host-built pieces back to the lab via 
 |---|---|
 | TypeScript TSX, syntactic (`interface <Name>Props`, type-literal aliases, string/numeric literal unions, JSDoc, expando + Object.assign compounds) | **Built + tested** (`core/extract.ts`) |
 | Imported / aliased / intersection Props types | **Built + tested** (`core/extract-checked.ts`, opt-in `typecheck: true`; resolves through the TS checker over a virtual program; unresolvable falls back to syntactic) |
-| Svelte / Vue SFCs | Named gap: compiler-API extractors behind the same `SourceFile[] -> specs` seam. Vue has `vue-component-meta` (official, vuejs/language-tools); Svelte can route through `svelte2tsx` and reuse the checked extractor |
+| Vue 3 SFC (`adapters/extract/vue.ts`) | **Built + tested**. Type-only `defineProps<T>()`, inline literal or local interface, `withDefaults` unwrapped, `<script setup>` preferred over a plain module script |
+| Svelte 5 SFC (`adapters/extract/svelte.ts`) | **Built + tested**. Annotated `$props()` destructuring, inline literal or local `interface Props`, instance script preferred over `<script module>` |
+
+Neither needs its framework's compiler. Both declare props as a TypeScript
+annotation inside a `<script>` block, so the readers pull the script, parse it
+with the TypeScript API already in the dependency tree, and run the SAME prop
+classifier as TSX. A knob therefore behaves identically whatever the source
+was, and the limit is the same one TSX has without `typecheck`: a Props type
+imported from another module degrades to `unsupported` rather than being
+guessed at.
+
+Extraction is now a port (`Extractor`), chosen by file extension. Core knows
+only the TSX reader; the driving adapters wire the SFC readers in, so core
+never depends on a framework's file format.
 
 ## Driving adapters (dev-server transport)
 
@@ -44,7 +57,7 @@ bench can drive it.
 |---|---|
 | Solid (`adapters/mount/solid.ts`, ~60 loc) | **Built + contract-tested + browser-verified** |
 | React (`adapters/mount/react.ts`, ~45 loc) | **Built + contract-tested + browser-verified** |
-| Vue 3 (`adapters/mount/vue.ts`, ~50 loc) | **Built + contract-tested**; not yet exercised against a real Vue host |
+| Vue 3 (`adapters/mount/vue.ts`, ~50 loc) | **Built + contract-tested**; extraction verified end to end against a live host, rendering not yet exercised in a real Vue host |
 | Svelte 5 (`adapters/mount/svelte.svelte.ts`, ~60 loc) | **Built + contract-tested**; not yet exercised against a real Svelte host |
 
 All four pass the same 13 invariants. Vue and Svelte were added without a single

@@ -1,8 +1,16 @@
 import { createServer, type Server } from "node:http"
 import { createEngine } from "../core/engine"
+import { tsxExtractor } from "../core/extract"
+import { svelteExtractor } from "./extract/svelte"
+import { vueExtractor } from "./extract/vue"
 import type { SteerEngine } from "../ports"
 import { handleSteerRequest } from "./http"
 import { fsFixtures, fsManifest, fsNotes, fsSources } from "./node-fs"
+
+// Composition root: every language-surface reader a host might need. Core stays
+// unaware of these; a TSX-only project simply has no SFCs to read.
+const DEFAULT_EXTRACTORS = [tsxExtractor, vueExtractor, svelteExtractor]
+
 
 // The framework-neutral driving adapter: a standalone dev API server for
 // hosts whose dev server is not Vite (Next, webpack, express, anything).
@@ -34,6 +42,7 @@ export function createSteerServer(options: SteerServerOptions): SteerServer {
   const engine = createEngine({
     sources: fsSources(options.root, { componentDir: options.componentDir }),
     manifestStore: fsManifest(options.root),
+    extractors: DEFAULT_EXTRACTORS,
     fixtures: fsFixtures(options.root),
     notes: fsNotes(options.root),
     config: {

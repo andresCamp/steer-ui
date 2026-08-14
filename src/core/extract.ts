@@ -1,5 +1,6 @@
 import ts from "typescript"
 import type { SteerComponentSpec, SteerProp } from "./model"
+import type { Extractor } from "../ports"
 
 // TypeScript AST extraction: components and their prop knobs, derived from
 // source text alone. Pure — same source in, same specs out.
@@ -34,7 +35,7 @@ export function classifyType(
   return { kind: "unsupported", raw }
 }
 
-function jsDocText(node: ts.Node): string | undefined {
+export function jsDocText(node: ts.Node): string | undefined {
   const docs = (node as { jsDoc?: { comment?: string | ts.NodeArray<ts.JSDocComment> }[] }).jsDoc
   if (!docs || docs.length === 0) return undefined
   const comment = docs[docs.length - 1].comment
@@ -48,7 +49,7 @@ function hasExportModifier(node: ts.Node): boolean {
   return !!modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword)
 }
 
-function extractProps(members: ts.NodeArray<ts.TypeElement> | undefined): SteerProp[] {
+export function extractProps(members: ts.NodeArray<ts.TypeElement> | undefined): SteerProp[] {
   const props: SteerProp[] = []
   if (!members) return props
   for (const member of members) {
@@ -216,4 +217,11 @@ export function extractComponents(
     })
   }
   return components
+}
+
+/** The TSX reader as an Extractor, so every language surface is a port entry. */
+export const tsxExtractor: Extractor = {
+  id: "tsx",
+  extensions: [".tsx"],
+  extract: (file) => extractComponents(file.path, file.source),
 }

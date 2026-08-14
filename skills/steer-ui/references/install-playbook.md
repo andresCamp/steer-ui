@@ -5,7 +5,7 @@ Stack recipes for instantiating steer-ui into a host. The lab is `~/onc9-systems
 ## Detection checklist
 
 - Bundler: `vite.config.*` present? Vite gets the plugin; anything else gets the standalone server + proxy (below).
-- Framework: which Mounter does the host need? Solid, React, Vue and Svelte all ship one, and the bench is the same prebuilt chrome for every host. Vue and Svelte hosts still lack an SFC extractor, so the manifest would be empty: install the overlay if useful, and be honest that the bench needs the extractor first.
+- Framework: which Mounter does the host need? Solid, React, Vue and Svelte all ship one, plus a reader for their source (`.tsx` in core, `.vue` and `.svelte` in `adapters/extract/`). The bench is the same prebuilt chrome for every host. No Vue or Svelte host has been exercised end to end yet, so expect to promote fixes back from the first one.
 - Component dir: where do reusable components live? (`src/components` default; anything else becomes the `componentDir` option.)
 - Router: nothing to add. The chrome bundles its own router and owns the `/__steer` document; it never touches the host's routing.
 - Styling: nothing to do. The chrome ships its own CSS, and the overlay's stylesheet deliberately omits Tailwind preflight so it cannot reset the host app's styles. The host's own stylesheet is loaded into the bench document so host components look the way they do in the app.
@@ -87,7 +87,7 @@ longer has to be ported to the host's framework.
 
 ## Recipe gaps (be honest, do not improvise at install time)
 
-- **Svelte / Vue hosts**: the Mounters exist and are contract-tested. What is missing is the extractor: `.vue` and `.svelte` sources yield no components, so the manifest comes back empty. That is lab work (`vue-component-meta`, or `svelte2tsx` into the checked extractor), not install-time improvisation.
+- **Svelte / Vue hosts**: Mounter and extractor both exist and are tested, but no such host has been driven end to end. Install, then verify hard: the manifest should list the SFCs with their knobs, and the bench should render them. A component that appears in the manifest but renders a "not registered here" notice means the register glob missed it.
 - **Overlay-only installs**: the overlay needs no Mounter at all (it reads the host's rendered DOM), so a host with no Mounter yet can still get the live app view and page notes.
 
 ## Uninstall (mirror of install)
