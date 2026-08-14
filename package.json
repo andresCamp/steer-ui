@@ -98,7 +98,7 @@
   "bugs": {
     "url": "https://github.com/andresCamp/steer-ui/issues"
   },
-  "author": "Andrés Campos",
+  "author": "Andr\u00e9s Campos",
   "keywords": [
     "storybook",
     "component",
@@ -146,5 +146,8 @@
     "svelte": {
       "optional": true
     }
+  },
+  "bin": {
+    "steer-ui": "./dist/cli/bin.js"
   }
 }
