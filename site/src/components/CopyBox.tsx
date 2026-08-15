@@ -1,7 +1,7 @@
 import { createSignal, mergeProps } from "solid-js"
 
 export interface CopyBoxProps {
-  /** The command a visitor copies. */
+  /** The line a visitor copies and pastes into their agent. */
   command?: string
   /** Prompt character shown before the command. */
   prompt?: string
@@ -11,7 +11,11 @@ export interface CopyBoxProps {
 
 /** The install command, click to copy. The page's single call to action. */
 export function CopyBox(props: CopyBoxProps) {
-  const merged = mergeProps({ command: "/plugin marketplace add andresCamp/steer-ui", prompt: "", draft: false }, props)
+  const merged = mergeProps({
+      command: "Set up steer-ui here: follow steerui.com/install.md",
+      prompt: "",
+      draft: false,
+    }, props)
   const [copied, setCopied] = createSignal(false)
 
   const copy = () => {
@@ -25,7 +29,7 @@ export function CopyBox(props: CopyBoxProps) {
       type="button"
       onClick={copy}
       data-steer="CopyBox"
-      class={`refines group inline-flex w-full max-w-[520px] items-center gap-3 text-left ${
+      class={`refines group inline-flex w-full max-w-[580px] items-center gap-3 text-left ${
         merged.draft
           ? "rounded-[3px] border border-zinc-500 bg-white px-4 py-3"
           : "smooth-corners-sm border border-black/[0.08] bg-white px-4 py-3 hover:border-black/20"

@@ -8,6 +8,23 @@ Nothing is hand-authored. The component catalog is derived from your TypeScript 
 
 Built as an [onc9 primitive](SPEC.md): a pure hexagonal engine (`src/`), an offline deterministic bench (`playground/`), and an agent skill (`skills/steer-ui/`) that installs it into host projects.
 
+## Install
+
+Paste this into whatever coding agent you already use:
+
+```
+Set up steer-ui here: follow steerui.com/install.md
+```
+
+It reads your project, runs `npx steer-ui init` with what it worked out, adds
+one line to your bundler config, and checks its own work. Nothing to decide.
+
+Prefer a command? `npm i -D steer-ui && npx steer-ui init` does the same thing
+and prints the one line to add. Agents that read a skills registry can also
+`npx skills add andresCamp/steer-ui`.
+
+Vite hosts are supported today, on Solid, React, Vue and Svelte.
+
 ## The five verbs (what an agent gets)
 
 - **enumerate**: `GET /__steer/api/manifest`, regenerated from TypeScript source on every change (props from `<Name>Props` declarations, JSDoc descriptions, usage sites with `internal` tagging).

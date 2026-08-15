@@ -1,96 +1,45 @@
 # Install playbook
 
-Stack recipes for instantiating steer-ui into a host. The lab is `~/onc9-systems/steer-ui`; record the lab commit hash in a comment at the top of every copied file (`// steer-ui <hash> - copied from the lab; promote fixes back`).
+The install procedure lives at `https://steerui.com/install.md`, and also ships
+in the package at `node_modules/steer-ui/install.md`. It is the same document
+the pasted-prompt door uses. Follow that, not a copy of it: two install
+procedures means one of them is quietly wrong.
 
-## Detection checklist
+This file holds only what that document deliberately leaves out.
 
-- Bundler: `vite.config.*` present? Vite gets the plugin; anything else gets the standalone server + proxy (below).
-- Framework: which Mounter does the host need? Solid, React, Vue and Svelte all ship one, plus a reader for their source (`.tsx` in core, `.vue` and `.svelte` in `adapters/extract/`). The bench is the same prebuilt chrome for every host. Vue is exercised end to end in the lab (`playground/vue-app`); Svelte is not, so expect to promote fixes back from the first Svelte host.
-- Component dir: where do reusable components live? (`src/components` default; anything else becomes the `componentDir` option.)
-- Router: nothing to add. The chrome bundles its own router and owns the `/__steer` document; it never touches the host's routing.
-- Styling: nothing to do. The chrome ships its own CSS. The overlay's stylesheet omits Tailwind's preflight so it cannot reset the host app's styles, carries a reset scoped to `#steer-overlay` so it still looks right in a host with no Tailwind, and declares Tailwind's canonical layer order (`theme, base, components, utilities`) so injecting it into the host's <head> cannot reorder the host's own layers. The host's stylesheet is loaded into the bench document so host components look as they do in the app.
-- Icons: nothing to install. They are bundled into the chrome.
-- Prop types imported from other modules or built from intersections? Turn on `typecheck: true` (costs a TS program per regeneration; worth it whenever knobs come back `unsupported`).
+## Why init does not touch the bundler config
 
-## Recipe: Vite host (Solid or React)
+It is arbitrary: `defineConfig(() => ...)`, conditionals, spread plugin arrays,
+generated configs. AST-editing it is where a tool starts damaging real projects,
+which is the one outcome a person cannot recover from. The CLI prints the
+snippet with resolved paths and you place it. This is the split the whole
+install rests on: the CLI does what is deterministic, you do what needs reading
+an unfamiliar file.
 
-There is no surface to copy any more. The bench and the overlay are prebuilt
-assets the plugin serves; the host compiles its component glob and one Mounter.
+## Named gaps, and why improvising through them is worse than stopping
 
-1. **Copy the engine** to `tooling/steer-ui/`:
-   - `src/core/*` -> `tooling/steer-ui/core/`
-   - `src/ports/index.ts` -> `tooling/steer-ui/ports/index.ts`
-   - `src/adapters/{node-fs.ts,http.ts,vite.ts,client.ts}` -> `tooling/steer-ui/`
-   - `src/adapters/mount/<framework>.ts` -> `tooling/steer-ui/mount/`
-   - `dist/chrome/*` -> `tooling/steer-ui/chrome/` (built artifacts, not source)
-   - Fix relative imports in the adapters: `../core/...` and `../ports` become `./core/...` and `./ports`.
-2. **Register entry** at `src/steer.ts`. This is the ONLY host-compiled part.
-   Adjust the glob to the host's component dir and the author to the human's name:
-   ```ts
-   import { publishRegistration } from "../tooling/steer-ui/core/bridge"
-   import { solidMounter } from "../tooling/steer-ui/mount/solid"
+- **Non-Vite hosts.** `steer-ui/server` runs the same API standalone and the
+  host proxies `/__steer/api/*` to it, then serves `dist/chrome/*` statically
+  and the bench document itself. This has NOT been exercised against a real
+  Next or webpack host. Propose it, do not improvise it mid-install.
+- **A framework with no Mounter.** Solid, React, Vue and Svelte ship one. A
+  fifth needs ~40 lines against `adapters/mount/contract.test.ts` in the lab,
+  and an Extractor for its source. That is lab work.
+- **Overlay only.** The overlay reads the host's rendered DOM and needs no
+  Mounter at all, so a stack with no bench support can still get page notes.
 
-   publishRegistration(globalThis, {
-     modules: import.meta.glob("./components/**/*.tsx", { eager: true }) as Record<
-       string,
-       Record<string, unknown>
-     >,
-     mounter: solidMounter,
-     author: "<human>",
-   })
-   ```
-3. **Wire the plugin** in `vite.config.ts` (the export is `steer`):
-   ```ts
-   import { steer } from "./tooling/steer-ui/vite"
-   plugins: [/* framework plugin */, tailwindcss(), steer({ componentDir: "src/components", typecheck: true })]
-   ```
-4. **Do not mount steer-ui in the host router or App.** The plugin is `apply: "serve"`: it injects the overlay as a prebuilt script via `transformIndexHtml` and serves `/__steer` as its own HTML entry. `src/steer.ts` is imported only by that virtual host entry. If a host file imports it directly, it will ship. That is a bug.
-5. **Scaffold `.steer/`**: create `fixtures/` and `notes/` (empty is fine), append `.steer/manifest.json` (path-adjusted) to `.gitignore`.
-6. **AGENTS.md**: inject the block from `claude-md-block.md` (CLAUDE.md as an alias for Claude Code).
-7. **Verify**: dev server up; `curl /__steer/api/doctor` passes; Playwright renders `/__steer`; create + resolve a scratch note via the API; delete the scratch file.
+## Upgrading
 
-Idempotency: every step checks before writing (file exists with drift receipt -> compare, refresh if the lab moved; config lines present -> skip; CLAUDE block present -> replace between markers).
+`.steer/install.json` is the receipt: version, framework, resolved paths, and
+what was written. Compare its `version` against the installed package, bump the
+dependency, re-run `init` (idempotent), and rebuild nothing else. The chrome
+ships prebuilt inside the package, so there is no drift to reconcile by hand and
+no commit-hash comments to chase.
 
-## Recipe: non-Vite host (Next, webpack, express)
+## Uninstall
 
-The engine runs as a standalone API server and the host proxies to it. The bench
-is the same prebuilt chrome, served as static files, so there is no surface to
-port and no Solid in the host's build.
-
-1. Copy the engine as above, but take `node-server.ts` instead of `vite.ts`.
-2. Run it alongside dev (a `steer-ui:api` script): 
-   ```ts
-   import { createSteerServer } from "./tooling/steer-ui/node-server"
-   const { listen } = createSteerServer({ root: process.cwd(), port: 5199, typecheck: true })
-   listen()
-   ```
-   No watcher needed: manifest and doctor regenerate on every read.
-3. Proxy `/__steer/api/*` to it:
-   - Next (`next.config`): `rewrites: [{ source: "/__steer/api/:path*", destination: "http://localhost:5199/__steer/api/:path*" }]`
-   - express: `http-proxy-middleware` on the same path.
-4. Serve the chrome. Copy `tooling/steer-ui/chrome/*` to the host's static
-   directory (Next: `public/__steer/chrome/`), so `bench.js`, `bench.css`,
-   `overlay.js` and `overlay.css` are reachable at `/__steer/chrome/`.
-5. Serve the bench document at `/__steer/*`. It is a static HTML page with three
-   tags: the chrome stylesheet, the host's register entry, and the chrome
-   script. Load order does not matter, the bridge queues whichever lands first.
-6. Inject the overlay into the host's app pages in dev: a `<link>` for
-   `overlay.css` and a `<script type="module">` for `overlay.js`. No framework
-   code enters the host build; the overlay only reads the rendered DOM.
-7. The register entry is compiled by the host. Next has no `import.meta.glob`,
-   so use `require.context` or generate the component map at dev-server start.
-8. `.steer/` scaffold, AGENTS.md, and verification are identical to the Vite recipe.
-
-Steps 4 to 7 have NOT been exercised against a real Next host yet; expect to
-promote fixes back. What has changed is that the hard part is gone: the bench no
-longer has to be ported to the host's framework.
-
-## Recipe gaps (be honest, do not improvise at install time)
-
-- **Svelte hosts**: Mounter and extractor exist and are tested, but no Svelte host has been driven end to end. Install, then verify hard: the manifest should list the SFCs with their knobs, and the bench should render them. A component that appears in the manifest but renders a "not registered here" notice means the register glob missed it.
-- **Rebuild the chrome after changing it.** The chrome is a build artifact, not part of the host's HMR graph, so edits to it need `pnpm build:chrome`. In a host install this only matters when upgrading.
-- **Overlay-only installs**: the overlay needs no Mounter at all (it reads the host's rendered DOM), so a host with no Mounter yet can still get the live app view and page notes.
-
-## Uninstall (mirror of install)
-
-Remove in reverse order: register entry `src/steer.ts`, plugin/server wiring, `tooling/steer-ui/` (engine, mount, chrome), `.gitignore` line, AGENTS.md/CLAUDE.md block (between its markers). There are no orphaned deps to clean up: the chrome bundles its own. Then handle `.steer/`: fixtures are cheap to delete with the human's nod; **open notes are feedback: enumerate them with text + author, offer archive to `docs/steer-ui-notes-archive/` vs delete, and default to archive.**
+Read the receipt, remove what it lists, remove the plugin line and the
+AGENTS.md block. `.steer/fixtures` is cheap to delete with a nod. **Open notes
+are human feedback**: enumerate them with text and author, offer archiving to
+`docs/steer-ui-notes-archive/`, and default to archive. Never delete them
+silently.
